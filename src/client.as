@@ -1,6 +1,5 @@
 enum WsState { Disconnected, Connecting, Handshaking, Open, Closing }
 
-/* ──────────────────────────────────────────────────────────── */
 class WebSocketClient {
     WsState state = WsState::Disconnected;
 
@@ -9,6 +8,7 @@ class WebSocketClient {
     // Public API dings
 
     bool Connect() {
+        log("Connecting to " + host + ":" + tostring(port), LogLevel::Info, 11, "Connect");
         if (state != WsState::Disconnected) return false;
 
         usingTLS = secure;
@@ -33,11 +33,29 @@ class WebSocketClient {
             }
         }
 
-        if (state == WsState::Open) {
-            FlushTx();
-            if (Avail() > 0) Read(Avail());
-            if (!usingTLS && Hung()) ScheduleReconnect();
+        if (state != WsState::Open) return;
+
+        FlushTx();
+
+        if (Avail() > 0) {
+            string frame = Read(Avail());
+            if (frame.Length >= 2) {
+                uint8 b0 = frame[0];
+                uint8 opcode = b0 & 0x0F;
+                if (opcode == 0x9) {
+                    uint8 len = frame[1] & 0x7F;
+                    MemoryBuffer pong;
+                    pong.Write(uint8(0x8A));
+                    pong.Write(uint8(len));
+                    for (uint i = 0; i < len && 2 + int(i) < frame.Length; i++) {
+                        pong.Write(uint8(frame[2 + i]));
+                    }
+                    WriteBuf(pong);
+                }
+            }
         }
+
+        if (!usingTLS && Hung()) ScheduleReconnect();
     }
 
     void SendText(const string &in json) {
@@ -100,6 +118,7 @@ class WebSocketClient {
     string _hsBuf;
 
     void PerformHandshake() {
+        log("Performing WebSocket handshake", LogLevel::Info, 121, "PerformHandshake");
         MemoryBuffer keyBuf;
         
         for (uint i = 0; i < 16; i++) {

@@ -1,12 +1,59 @@
-const uint SEND_EVERY_MS = 1;
+[Setting name="send threshold" min=1 max=1000 hidden] uint SEND_EVERY_MS = 1;
+[Setting name="port" hidden] int PORT = 8765;
+[Setting name="Automatic startup on plugin load" hidden] bool AutoStart = false;
+
+[SettingsTab name="General" icon="Cog" order="1"]
+void RT_Settings() {
+    if (UI::BeginChild("General Settings", vec2(0, 0), true)) {
+
+        SEND_EVERY_MS = UI::SliderInt("Send every (ms)", SEND_EVERY_MS, 1, 1000);
+        PORT = UI::SliderInt("Port", PORT, 1, 65535);
+        
+        if (UI::Button("restart server")) {
+            if (wsFeed !is null) wsFeed.Close();
+            if (wsVstate !is null) wsVstate.Close();
+            startnew(Main);
+        }
+        UI::SameLine();
+        if (UI::Button("reconnect")) {
+            wsFeed.Connect();
+            wsVstate.Connect();
+        }
+        UI::SameLine();
+        if (UI::Button("disconnect")) {
+            if (wsFeed !is null) wsFeed.Close();
+            if (wsVstate !is null) wsVstate.Close();
+        }
+
+        AutoStart = UI::Checkbox("Automatic startup on plugin load", AutoStart);
+
+        UI::Separator();
+
+        
+
+        if (UI::Button("Reset to defaults")) {
+            SEND_EVERY_MS = 1;
+            PORT = 8765;
+        }
+
+        UI::EndChild();
+    }
+}
 
 WebSocketClient@ wsFeed;
 WebSocketClient@ wsVstate;
 uint nextSend = 0;
 
 void Main() {
-    @wsFeed   = WebSocketClient("ws://127.0.0.1:8765/feed");
-    @wsVstate = WebSocketClient("ws://127.0.0.1:8765/vstate");
+    if (AutoStart) {
+        if (wsFeed   !is null) wsFeed.Close();
+        if (wsVstate !is null) wsVstate.Close();
+    } else {
+        return;
+    }
+
+    @wsFeed   = WebSocketClient("ws://127.0.0.1:"+PORT+"/feed");
+    @wsVstate = WebSocketClient("ws://127.0.0.1:"+PORT+"/vstate");
 
     wsFeed.Connect();
     wsVstate.Connect();

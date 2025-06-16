@@ -113,8 +113,8 @@ namespace _IO {
 
         // Read from file
         string ReadFileToEnd(const string &in path, bool verbose = false) {
-            if (verbose) log("Reading file: " + path, LogLevel::Info, 114, "ReadFileToEnd");
-            if (!IO::FileExists(path)) { log("File does not exist: " + path, LogLevel::Error, 115, "ReadFileToEnd"); return ""; }
+            if (verbose) log("Reading file: " + path, LogLevel::Info, 116, "ReadFileToEnd");
+            if (!IO::FileExists(path)) { log("File does not exist: " + path, LogLevel::Error, 117, "ReadFileToEnd"); return ""; }
 
             IO::File file(path, IO::FileMode::Read);
             string content = file.ReadToEnd();
@@ -123,7 +123,7 @@ namespace _IO {
         }
         
         string ReadSourceFileToEnd(const string &in path, bool verbose = false) {
-            if (!IO::FileExists(path)) { log("File does not exist: " + path, LogLevel::Error, 124, "ReadSourceFileToEnd"); return ""; }
+            if (!IO::FileExists(path)) { log("File does not exist: " + path, LogLevel::Error, 126, "ReadSourceFileToEnd"); return ""; }
 
             IO::FileSource f(path);
             string content = f.ReadToEnd();
@@ -132,20 +132,20 @@ namespace _IO {
 
         // Move file
         void CopySourceFileToNonSource(const string &in originalPath, const string &in storagePath, bool verbose = false) {
-            if (verbose) log("Moving the file content", LogLevel::Info, 133, "CopySourceFileToNonSource");
+            if (verbose) log("Moving the file content", LogLevel::Info, 135, "CopySourceFileToNonSource");
             
             string fileContents = ReadSourceFileToEnd(originalPath);
             WriteFile(storagePath, fileContents);
 
-            if (verbose) log("Finished moving the file", LogLevel::Info, 138, "CopySourceFileToNonSource");
+            if (verbose) log("Finished moving the file", LogLevel::Info, 140, "CopySourceFileToNonSource");
 
             // TODO: Must check how IO::Move works with source files
         }
 
         // Copy file
         void CopyFileTo(const string &in source, const string &in destination, bool verbose = false) {
-            if (!IO::FileExists(source)) { if (verbose) log("Source file does not exist: " + source, LogLevel::Error, 145, "CopyFileTo"); return; }
-            if (IO::FileExists(destination)) { if (verbose) log("Destination file already exists: " + destination, LogLevel::Error, 146, "CopyFileTo"); return; }
+            if (!IO::FileExists(source)) { if (verbose) log("Source file does not exist: " + source, LogLevel::Error, 147, "CopyFileTo"); return; }
+            if (IO::FileExists(destination)) { if (verbose) log("Destination file already exists: " + destination, LogLevel::Error, 148, "CopyFileTo"); return; }
 
             string content = ReadFileToEnd(source, verbose);
             WriteFile(destination, content, verbose);
@@ -153,8 +153,8 @@ namespace _IO {
 
         // Rename file
         void RenameFile(const string &in filePath, const string &in newFileName, bool verbose = false) {
-            if (verbose) log("Attempting to rename file: " + filePath, LogLevel::Info, 154, "RenameFile");
-            if (!IO::FileExists(filePath)) { log("File does not exist: " + filePath, LogLevel::Error, 155, "RenameFile"); return; }
+            if (verbose) log("Attempting to rename file: " + filePath, LogLevel::Info, 156, "RenameFile");
+            if (!IO::FileExists(filePath)) { log("File does not exist: " + filePath, LogLevel::Error, 157, "RenameFile"); return; }
 
             string currentPath = filePath;
             string newPath;
@@ -182,7 +182,7 @@ namespace _IO {
         if (IO::FolderExists(path)) {
             OpenExplorerPath(path);
         } else {
-            if (verbose) log("Folder does not exist: " + path, LogLevel::Info, 183, "OpenFolder");
+            if (verbose) log("Folder does not exist: " + path, LogLevel::Info, 185, "OpenFolder");
         }
     }
 }
@@ -262,7 +262,7 @@ namespace _Game {
         CGameScoreAndLeaderBoardManagerScript@ scoreMgr = network.ClientManiaAppPlayground.ScoreMgr;
         int pbTime = scoreMgr.Map_GetRecord_v2(userId, _mapUid, "PersonalBest", "", "TimeAttack", "");
 
-        if (verbose) log(mapUid + " | " + pbTime, LogLevel::Debug, 263, "HasPersonalBest");
+        if (verbose) log(mapUid + " | " + pbTime, LogLevel::Debug, 265, "HasPersonalBest");
         return pbTime > 0;
     }
 
@@ -313,7 +313,7 @@ namespace _Net {
         void CoroDownloadFileToDestination(const string &in userdata) {
             array<string> parts = userdata.Split("|");
             if (parts.Length != 5) {
-                log("Invalid userdata format.", LogLevel::Error, 314, "CoroDownloadFileToDestination");
+                log("Invalid userdata format.", LogLevel::Error, 316, "CoroDownloadFileToDestination");
                 return;
             }
             string url = parts[0];
@@ -361,13 +361,13 @@ namespace _Net {
                 request.SaveToFile(tmp_path);
                 _IO::File::CopyFileTo(tmp_path, destination);
 
-                if (!IO::FileExists(tmp_path)) { log("Failed to save file to: " + tmp_path, LogLevel::Error, 362, "CoroDownloadFileToDestination"); return; }
-                if (!IO::FileExists(destination)) { log("Failed to move file to: " + destination, LogLevel::Error, 363, "CoroDownloadFileToDestination"); return; }
+                if (!IO::FileExists(tmp_path)) { log("Failed to save file to: " + tmp_path, LogLevel::Error, 364, "CoroDownloadFileToDestination"); return; }
+                if (!IO::FileExists(destination)) { log("Failed to move file to: " + destination, LogLevel::Error, 365, "CoroDownloadFileToDestination"); return; }
 
                 IO::Delete(tmp_path);
 
                 if (!IO::FileExists(tmp_path) && IO::FileExists(destination)) {
-                    log("File downloaded successfully, saving " + file_name + " to: " + destination, LogLevel::Info, 368, "CoroDownloadFileToDestination");
+                    log("File downloaded successfully, saving " + file_name + " to: " + destination, LogLevel::Info, 370, "CoroDownloadFileToDestination");
 
                     downloadedFilePaths[key] = key;
                     downloadedFilePaths[key] = destination;
@@ -381,7 +381,7 @@ namespace _Net {
                     }
                 }
             } else {
-                log("Failed to download file. Response code: " + request.ResponseCode(), LogLevel::Info, 382, "CoroDownloadFileToDestination");
+                log("Failed to download file. Response code: " + request.ResponseCode(), LogLevel::Info, 384, "CoroDownloadFileToDestination");
             }
         }
     }

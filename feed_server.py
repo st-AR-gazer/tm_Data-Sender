@@ -93,7 +93,7 @@ async def router(ws: WebSocketServerProtocol):
 
 async def main():
     human_paths = ", ".join(sorted(ALLOWED_PATHS))
-    async with serve(router, "127.0.0.1", 8765, ping_interval=20, ping_timeout=20):
+    async with serve(router, "127.0.0.1", 8765, ping_interval=None, ping_timeout=None):
         logging.info("Listening on ws://127.0.0.1:8765{%s}", human_paths)
         await asyncio.Future()
 
