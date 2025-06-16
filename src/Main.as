@@ -9,16 +9,26 @@ void RT_Settings() {
         SEND_EVERY_MS = UI::SliderInt("Send every (ms)", SEND_EVERY_MS, 1, 1000);
         PORT = UI::SliderInt("Port", PORT, 1, 65535);
         
-        if (UI::Button("restart server")) {
+        if (UI::Button("restart server + connect")) {
             if (wsFeed !is null) wsFeed.Close();
             if (wsVstate !is null) wsVstate.Close();
             startnew(Main);
         }
         UI::SameLine();
-        if (UI::Button("reconnect")) {
-            wsFeed.Connect();
-            wsVstate.Connect();
+
+        if (wsFeed !is null && wsVstate !is null && (wsFeed.state != WsState::Open || wsVstate.state != WsState::Open)) {
+            if (UI::Button("reconnect")) {
+                wsFeed.Connect();
+                wsVstate.Connect();
+            }
+        } else if (wsFeed is null || wsVstate is null) {
+            if (UI::Button("connect")) {
+                startnew(Main);
+            }
+        } else {
+            _UI::DisabledButton("(re)connect");
         }
+        
         UI::SameLine();
         if (UI::Button("disconnect")) {
             if (wsFeed !is null) wsFeed.Close();
