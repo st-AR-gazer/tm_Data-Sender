@@ -1,20 +1,25 @@
-const uint SEND_EVERY_MS = 100;
+const uint SEND_EVERY_MS = 1;
 
-WebSocketClient@ ws;
+WebSocketClient@ wsFeed;
+WebSocketClient@ wsVstate;
 uint nextSend = 0;
 
 void Main() {
-    @ws = WebSocketClient("ws://127.0.0.1:8765/feed");
-    ws.Connect();
+    @wsFeed   = WebSocketClient("ws://127.0.0.1:8765/feed");
+    @wsVstate = WebSocketClient("ws://127.0.0.1:8765/vstate");
+
+    wsFeed.Connect();
+    wsVstate.Connect();
 
     while (true) {
-        ws.Update();
+        wsFeed.Update();
+        wsVstate.Update();
 
-        if (Time::Now >= nextSend && ws.state == State::Open) {
+        if (Time::Now >= nextSend && wsFeed.state == WsState::Open && wsVstate.state == WsState::Open) {
             nextSend = Time::Now + SEND_EVERY_MS;
 
-            Json::Value snap = MakeSnapshot();
-            ws.SendText(Json::Write(snap, false));
+            wsFeed.SendText(Json::Write(MakeSnapshot(), false));
+            wsVstate.SendText(Json::Write(VState::GetJson(),  false));
         }
         yield();
     }
@@ -24,19 +29,7 @@ void Update(float dt) {
     VState::Update(dt);
 }
 
-void Render() {
-    auto vjson = VState::GetJson();
-    
-    UI::Begin("RaceData-WS");
-    UI::Text("Socket: " + tostring(ws.state));
-    UI::Text("Last: " + Time::Format(Time::Now - VState::g_latest.t, true, true));
-    UI::Text("Speed: " + tostring(float(vjson["spd"])) + " m/s");
-    UI::Text("Accel: " + tostring(float(vjson["accel"])) + " m/s^2");
-    UI::Text("Jerk: " + tostring(float(vjson["jerk"])) + " m/s^3");
-    UI::Text("Steer: " + tostring(float(vjson["steer"])));
-    UI::End();
-}
-
 void OnDestroyed() {
-    if (ws !is null) ws.Close();
+    if (wsFeed   !is null) wsFeed.Close();
+    if (wsVstate  !is null) wsVstate.Close();
 }

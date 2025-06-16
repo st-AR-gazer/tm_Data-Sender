@@ -1,8 +1,8 @@
 [meta]
-name = ""
-author = "ar....."
+name = "Data Sender"
+author = "ar"
 version = "0.1.0"
-category = ""
+category = "Utilities"
 
 [script]
 dependencies = [ "MLHook", "MLFeedRaceData", "VehicleState" ]
