@@ -3,7 +3,7 @@
 
 ### Trackmania 2020 — DataSender Plugin Docs
 
-*A tiny guide for grabbing race + vehicle-state data over WebSockets.*
+*A tiny guide for grabbing race + vehicle-state data over sockets.*
 
 ---
 
