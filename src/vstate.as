@@ -3,6 +3,7 @@ namespace VState {
     class Snapshot {
         uint  t;             // Time::Now
         float spd;           // speed m/s
+        float sspd;          // side speed
         vec3  pos;           // position
         float steer;
         float throttle;
@@ -16,6 +17,10 @@ namespace VState {
         bool  groundContact;
         bool  reactorGround;
         int   gear;
+        float reactorTimer;
+        int   lastTurbo;
+        int   cruiseSpeed;
+        int   vehicleType;
 
         float steerAngFL, steerAngFR,
               wheelRotFL, wheelRotFR;
@@ -25,10 +30,14 @@ namespace VState {
 
         int matFL, matFR, matRL, matRR;
 
+        float dirtFL, dirtFR, dirtRL, dirtRR;
+        int fallFL, fallFR, fallRL, fallRR;
+
         Json::Value ToJson() const {
             Json::Value o = Json::Object();
             o["t"]   = int(t);
             o["spd"] = spd;
+            o["sspd"] = sspd;
 
             Json::Value p = Json::Array();
             p.Add(pos.x); p.Add(pos.y); p.Add(pos.z);
@@ -50,6 +59,10 @@ namespace VState {
             o["groundContact"] = groundContact;
             o["reactorGnd"]    = reactorGround;
             o["gear"]          = gear;
+            o["reactorT"]      = reactorTimer;
+            o["lastTurbo"]     = lastTurbo;
+            o["cruiseSpd"]     = cruiseSpeed;
+            o["vehType"]       = vehicleType;
 
             Json::Value fl = Json::Object();
                         fl["steerAng"]=steerAngFL;
@@ -57,6 +70,8 @@ namespace VState {
                         fl["damper"]=damperFL;
                         fl["slip"]=slipFL;
                         fl["mat"]=matFL;
+                        fl["dirt"]=dirtFL;
+                        fl["fall"]=fallFL;
 
             Json::Value fr = Json::Object();
                         fr["steerAng"]=steerAngFR;
@@ -64,16 +79,22 @@ namespace VState {
                         fr["damper"]=damperFR;
                         fr["slip"]=slipFR;
                         fr["mat"]=matFR;
+                        fr["dirt"]=dirtFR;
+                        fr["fall"]=fallFR;
                         
             Json::Value rl = Json::Object();
                         rl["damper"]=damperRL;
                         rl["slip"]=slipRL;
                         rl["mat"]=matRL;
+                        rl["dirt"]=dirtRL;
+                        rl["fall"]=fallRL;
                         
             Json::Value rr = Json::Object();
                         rr["damper"]=damperRR;
                         rr["slip"]=slipRR;
                         rr["mat"]=matRR;
+                        rr["dirt"]=dirtRR;
+                        rr["fall"]=fallRR;
 
             o["FL"] = fl; o["FR"] = fr; o["RL"] = rl; o["RR"] = rr;
             return o;
@@ -97,7 +118,8 @@ namespace VState {
         s.pos       = vis.Position;
         float speed = vis.WorldVel.Length();
         s.spd       = speed;
-
+        s.sspd      = VehicleState::GetSideSpeed(vis);
+        
         s.accel     = (speed - g_prevSpeed) / dt;
         s.jerk      = (s.accel - g_prevAccel) / dt;
         g_prevSpeed = speed;
@@ -113,6 +135,11 @@ namespace VState {
         s.reactorAC     = vis.ReactorAirControl;
         s.gear          = vis.CurGear;
         s.rpm           = VehicleState::GetRPM(vis);
+
+        s.reactorTimer  = VehicleState::GetReactorFinalTimer(vis);
+        s.lastTurbo     = VehicleState::GetLastTurboLevel(vis);
+        s.cruiseSpeed   = VehicleState::GetCruiseDisplaySpeed(vis);
+        s.vehicleType   = VehicleState::GetVehicleType(vis);
 
         bool finished = false;
         auto rd = MLFeed::GetRaceData_V4();
@@ -145,6 +172,16 @@ namespace VState {
         s.matRL      = int(vis.RLGroundContactMaterial);
         s.matRR      = int(vis.RRGroundContactMaterial);
 
+        s.dirtFL     = VehicleState::GetWheelDirt(vis, 0);
+        s.dirtFR     = VehicleState::GetWheelDirt(vis, 1);
+        s.dirtRL     = VehicleState::GetWheelDirt(vis, 2);
+        s.dirtRR     = VehicleState::GetWheelDirt(vis, 3);
+
+        s.fallFL     = VehicleState::GetWheelFalling(vis, 0);
+        s.fallFR     = VehicleState::GetWheelFalling(vis, 1);
+        s.fallRL     = VehicleState::GetWheelFalling(vis, 2);
+        s.fallRR     = VehicleState::GetWheelFalling(vis, 3);
+
         @g_latest = s;
         g_ready   = true;
     }
@@ -158,4 +195,3 @@ namespace VState {
     }
 
 }
-

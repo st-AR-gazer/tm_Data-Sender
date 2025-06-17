@@ -9,7 +9,9 @@ void RT_Settings() {
         SEND_EVERY_MS = UI::SliderInt("Send every (ms)", SEND_EVERY_MS, 1, 1000);
         PORT = UI::SliderInt("Port", PORT, 1, 65535);
         
-        if (UI::Button("restart server + connect")) {
+        if (UI::Button("start server")) {
+            serverStartedManually = true;
+
             if (wsFeed !is null) wsFeed.Close();
             if (wsVstate !is null) wsVstate.Close();
             startnew(Main);
@@ -38,9 +40,7 @@ void RT_Settings() {
         AutoStart = UI::Checkbox("Automatic startup on plugin load", AutoStart);
 
         UI::Separator();
-
         
-
         if (UI::Button("Reset to defaults")) {
             SEND_EVERY_MS = 1;
             PORT = 8765;
@@ -54,12 +54,18 @@ WebSocketClient@ wsFeed;
 WebSocketClient@ wsVstate;
 uint nextSend = 0;
 
+bool serverStartedManually = false;
+
 void Main() {
-    if (AutoStart) {
-        if (wsFeed   !is null) wsFeed.Close();
-        if (wsVstate !is null) wsVstate.Close();
-    } else {
-        return;
+    if (!serverStartedManually) {
+        if (AutoStart) {
+            if (wsFeed   !is null) wsFeed.Close();
+            if (wsVstate !is null) wsVstate.Close();
+            serverStartedManually = true;
+        } else {
+            serverStartedManually = false;
+            return;
+        }
     }
 
     @wsFeed   = WebSocketClient("ws://127.0.0.1:"+PORT+"/feed");
