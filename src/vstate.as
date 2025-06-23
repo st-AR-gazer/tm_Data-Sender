@@ -37,7 +37,12 @@ namespace VState {
             Json::Value o = Json::Object();
             o["t"]   = int(t);
             o["spd"] = spd;
+
+#if SIG_SCHOOL
             o["sspd"] = sspd;
+#else
+            o["sspd"] = "Needs SIG_SCHOOL";
+#endif
 
             Json::Value p = Json::Array();
             p.Add(pos.x); p.Add(pos.y); p.Add(pos.z);
@@ -118,7 +123,12 @@ namespace VState {
         s.pos       = vis.Position;
         float speed = vis.WorldVel.Length();
         s.spd       = speed;
-        s.sspd      = VehicleState::GetSideSpeed(vis);
+#if SIG_SCHOOL
+        s.sspd = VehicleState::GetSideSpeed(vis);
+#else
+        s.sspd = 0.0f;
+#endif
+
         
         s.accel     = (speed - g_prevSpeed) / dt;
         s.jerk      = (s.accel - g_prevAccel) / dt;
