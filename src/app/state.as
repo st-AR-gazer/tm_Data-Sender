@@ -1,20 +1,20 @@
-namespace PluginTemplate {
+namespace DataSender {
     Meta::Plugin@ PluginMeta = Meta::ExecutingPlugin();
 
     namespace App {
-        [Setting hidden name = "Window open"]
+        [Setting hidden name="Window open"]
         bool S_WindowOpen = true;
 
-        [Setting hidden name = "Hide with game UI"]
+        [Setting hidden name="Hide with game UI"]
         bool S_HideWithGame = true;
 
-        [Setting hidden name = "Hide with Openplanet UI"]
+        [Setting hidden name="Hide with Openplanet UI"]
         bool S_HideWithOP = false;
 
         string g_MenuIcon = "";
 
         string PluginNameHash() {
-            return Crypto::MD5(PluginTemplate::PluginMeta.Name);
+            return Crypto::MD5(DataSender::PluginMeta.Name);
         }
 
         string MenuIcon() {
@@ -26,7 +26,7 @@ namespace PluginTemplate {
 
         string MenuTitle() {
             string hash = PluginNameHash();
-            return "\\$" + hash.SubStr(0, 3) + MenuIcon() + "\\$z " + PluginTemplate::PluginMeta.Name;
+            return "\\$" + hash.SubStr(0, 3) + MenuIcon() + "\\$z " + DataSender::PluginMeta.Name;
         }
     }
 }

@@ -1,7 +1,9 @@
-enum WsState { Disconnected, Connecting, Handshaking, Open, Closing }
+namespace DataSender {
+namespace Sender {
+    enum WsState { Disconnected, Connecting, Handshaking, Open, Closing }
 
-class WebSocketClient {
-    WsState state = WsState::Disconnected;
+    class WebSocketClient {
+        WsState state = WsState::Disconnected;
 
     WebSocketClient(const string &in url) { ParseUrl(url); }
 
@@ -186,16 +188,18 @@ class WebSocketClient {
         return buf;
     }
 
-    void ScheduleReconnect() {
-        Close();
-        startnew(_Reconnect, @this);
+        void ScheduleReconnect() {
+            Close();
+            startnew(Reconnect, @this);
+        }
+    }
+
+    void Reconnect(ref@ r) {
+        WebSocketClient@ ws = cast<WebSocketClient>(r);
+        while (ws.state != WsState::Open) {
+            sleep(3000);
+            if (ws.state == WsState::Disconnected) ws.Connect();
+        }
     }
 }
-
-void _Reconnect(ref@ r) {
-    WebSocketClient@ ws = cast<WebSocketClient>(r);
-    while (ws.state != WsState::Open) {
-        sleep(3000);
-        if (ws.state == WsState::Disconnected) ws.Connect();
-    }
 }

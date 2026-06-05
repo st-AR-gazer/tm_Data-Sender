@@ -1,11 +1,11 @@
 void Main() {
-    PluginTemplate::App::Main();
+    DataSender::App::Main();
 }
 
 void RenderInterface() {
-    PluginTemplate::App::RenderInterface();
+    DataSender::App::RenderInterface();
 }
 
 void RenderMenu() {
-    PluginTemplate::App::RenderMenu();
+    DataSender::App::RenderMenu();
 }

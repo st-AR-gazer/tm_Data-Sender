@@ -1,11 +1,13 @@
-namespace PluginTemplate {
+namespace DataSender {
     namespace App {
         void Main() {
+            logging::Initialise();
+
             log(
-                "Loaded " + PluginTemplate::PluginMeta.Name + " v" + PluginTemplate::PluginMeta.Version,
+                "Loaded " + DataSender::PluginMeta.Name + " v" + DataSender::PluginMeta.Version,
                 LogLevel::Debug,
-                4,
-                "PluginTemplate::App::Main"
+                6,
+                "DataSender::App::Main"
             );
         }
 
@@ -19,7 +21,7 @@ namespace PluginTemplate {
         void RenderInterface() {
             if (!ShouldRenderWindow()) return;
 
-            if (UI::Begin(MenuTitle() + "###main-" + PluginTemplate::PluginMeta.ID, S_WindowOpen, UI::WindowFlags::None)) {
+            if (UI::Begin(MenuTitle() + "###main-" + DataSender::PluginMeta.ID, S_WindowOpen, UI::WindowFlags::None)) {
                 RenderWindow();
             }
             UI::End();
@@ -32,9 +34,7 @@ namespace PluginTemplate {
         }
 
         void RenderWindow() {
-            UI::Text(PluginTemplate::PluginMeta.Name + " " + PluginTemplate::PluginMeta.Version);
-            UI::Separator();
-            PluginTemplate::Example::RenderPanel();
+            UI::Text(DataSender::PluginMeta.Name + " " + DataSender::PluginMeta.Version);
         }
     }
 }

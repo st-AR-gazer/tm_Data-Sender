@@ -1,4 +1,6 @@
-namespace VState {
+namespace DataSender {
+namespace Sources {
+namespace VehicleStateSource {
 
     class Snapshot {
         uint  t;             // Time::Now
@@ -204,4 +206,6 @@ namespace VState {
         return g_latest.ToJson();
     }
 
+}
+}
 }

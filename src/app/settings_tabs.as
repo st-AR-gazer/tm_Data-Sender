@@ -1,9 +1,9 @@
-[SettingsTab name = "General" icon = "Cog" order = 1]
-void RenderPluginTemplateGeneralSettingsTab() {
-    PluginTemplate::App::RenderGeneralSettingsUI();
+[SettingsTab name="General" icon="Cog" order=1]
+void RenderDataSenderGeneralSettingsTab() {
+    DataSender::App::RenderGeneralSettingsUI();
 }
 
-[SettingsTab name = "Logging" icon = "ListAlt" order = 99]
-void RenderPluginTemplateLoggingSettingsTab() {
-    PluginTemplate::App::RenderLoggingSettingsUI();
+[SettingsTab name="Logging" icon="ListAlt" order=99]
+void RenderDataSenderLoggingSettingsTab() {
+    DataSender::App::RenderLoggingSettingsUI();
 }
