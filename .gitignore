@@ -1,1 +1,6 @@
 venv
+*.op
+__pycache__/
+logs/
+dumps/
+*.tmp
