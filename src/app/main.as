@@ -35,6 +35,23 @@ namespace DataSender {
 
         void RenderWindow() {
             UI::Text(DataSender::PluginMeta.Name + " " + DataSender::PluginMeta.Version);
+            UI::Separator();
+
+            UI::Text("Service: " + DataSender::Sender::Service::StatusText());
+            UI::SameLine();
+            if (DataSender::Sender::Service::IsRunning()) {
+                if (UI::Button("Stop##data-sender-service")) {
+                    DataSender::Sender::Service::Stop();
+                }
+            } else {
+                if (UI::Button("Start##data-sender-service")) {
+                    DataSender::Sender::Service::Start();
+                }
+            }
+
+            UI::Text("Clients: " + tostring(DataSender::Sender::Service::ConnectedClientCount()));
+            UI::Text("Race data samples: " + tostring(DataSender::Sender::Service::RaceDataSamples()));
+            UI::Text("Vehicle state samples: " + tostring(DataSender::Sender::Service::VehicleStateSamples()));
         }
     }
 }

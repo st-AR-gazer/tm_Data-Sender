@@ -5,6 +5,10 @@ namespace RaceData {
         auto rd = MLFeed::GetRaceData_V4();
         Json::Value root = Json::Object();
 
+        root["available"] = false;
+        if (rd is null) return root;
+
+        root["available"] = true;
         root["map"]        = rd.Map;
         root["gameTime"]   = MLFeed::GameTime;
         root["cpCount"]    = rd.CPCount;
