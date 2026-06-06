@@ -7,18 +7,27 @@ namespace DataSender {
             string S_Host = "127.0.0.1";
             [Setting hidden name="TCP port" min=1 max=65535]
             int S_Port = 8765;
-            [Setting hidden name="TCP broadcast interval" min=16 max=1000]
+            [Setting hidden name="TCP broadcast interval" min=0 max=1000]
             uint S_BroadcastIntervalMs = 100;
             [Setting hidden name="TCP max clients" min=1 max=64]
             int S_MaxClients = 8;
+
+            string ConfiguredHost() {
+                string host = S_Host.Trim();
+                if (host.Length == 0) {
+                    host = "127.0.0.1";
+                    S_Host = host;
+                }
+                return host;
+            }
 
             uint16 ConfiguredPort() {
                 S_Port = Math::Clamp(S_Port, 1, 65535);
                 return uint16(S_Port);
             }
 
-            uint ClampBroadcastInterval() {
-                return S_BroadcastIntervalMs < 16 ? 16 : S_BroadcastIntervalMs;
+            uint BroadcastIntervalMs() {
+                return S_BroadcastIntervalMs > 1000 ? 1000 : S_BroadcastIntervalMs;
             }
 
             uint MaxClients() {

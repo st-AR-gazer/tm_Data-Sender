@@ -22,7 +22,7 @@ namespace DataSender {
             }
 
             string AddressText() {
-                return S_Host + ":" + tostring(S_Port);
+                return ConfiguredHost() + ":" + tostring(ConfiguredPort());
             }
 
             string LastError() {
@@ -41,14 +41,24 @@ namespace DataSender {
                 return g_totalMessagesSent;
             }
 
+            ClientSession@ GetClient(uint index) {
+                if (index >= g_clients.Length) return null;
+                return g_clients[index];
+            }
+
+            void DisconnectClient(uint index) {
+                CloseClientAt(index);
+            }
+
             void EnsureRunning() {
                 if (!S_Enabled) {
                     if (g_running) Stop();
                     return;
                 }
 
+                string host = ConfiguredHost();
                 uint16 port = ConfiguredPort();
-                if (g_running && (g_boundHost != S_Host || g_boundPort != port)) {
+                if (g_running && (g_boundHost != host || g_boundPort != port)) {
                     Stop();
                 }
                 if (!g_running && Time::Now >= g_nextStartAttemptAt) {
@@ -60,19 +70,25 @@ namespace DataSender {
                 if (!S_Enabled) return false;
                 if (g_running) return true;
 
+                string host = ConfiguredHost();
                 uint16 port = ConfiguredPort();
                 @g_listener = Net::Socket();
 
-                if (!g_listener.Listen(S_Host, port)) {
-                    g_lastError = "Could not listen on " + S_Host + ":" + tostring(port);
+                if (!g_listener.Listen(host, port)) {
+                    g_lastError = "Could not listen on " + host + ":" + tostring(port);
                     g_nextStartAttemptAt = Time::Now + 3000;
                     @g_listener = null;
-                    log(g_lastError, LogLevel::Warning, 67, "Tcp::Start");
+                    log(
+                        g_lastError,
+                        LogLevel::Warning,
+                        67,
+                        "Tcp::Start"
+                    );
                     return false;
                 }
 
                 g_running = true;
-                g_boundHost = S_Host;
+                g_boundHost = host;
                 g_boundPort = port;
                 g_lastError = "";
                 g_nextStartAttemptAt = 0;
@@ -93,7 +109,12 @@ namespace DataSender {
                     @g_listener = null;
                 }
                 if (g_running) {
-                    log("TCP server stopped", LogLevel::Info, 94, "Tcp::Stop");
+                    log(
+                        "TCP server stopped",
+                        LogLevel::Info,
+                        94,
+                        "Tcp::Stop"
+                    );
                 }
                 g_running = false;
                 g_boundHost = "";
@@ -107,7 +128,8 @@ namespace DataSender {
                 AcceptClients();
                 UpdateClients();
                 uint now = Time::Now;
-                if (now >= g_lastBroadcastAt + ClampBroadcastInterval()) {
+                uint intervalMs = BroadcastIntervalMs();
+                if (intervalMs == 0 || now >= g_lastBroadcastAt + intervalMs) {
                     g_lastBroadcastAt = now;
                     BroadcastTelemetry();
                 }
@@ -117,7 +139,7 @@ namespace DataSender {
                 Json::Value root = Json::Object();
                 root["enabled"] = S_Enabled;
                 root["running"] = g_running;
-                root["host"] = S_Host;
+                root["host"] = ConfiguredHost();
                 root["port"] = int(ConfiguredPort());
                 root["clients"] = int(ClientCount());
                 root["maxClients"] = S_MaxClients;
@@ -145,7 +167,12 @@ namespace DataSender {
                     g_totalAccepted++;
                     SendToClient(client, DataSender::Sender::Service::StatusMessage());
                     SendLatestMessages(client);
-                    log("TCP client connected", LogLevel::Info, 152, "Tcp::AcceptClients");
+                    log(
+                        "TCP client connected",
+                        LogLevel::Info,
+                        152,
+                        "Tcp::AcceptClients"
+                    );
                 }
             }
 

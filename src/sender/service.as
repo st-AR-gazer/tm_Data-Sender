@@ -80,6 +80,14 @@ namespace DataSender {
                 return g_updateCount;
             }
 
+            uint StartedAt() {
+                return g_startedAt;
+            }
+
+            uint StoppedAt() {
+                return g_stoppedAt;
+            }
+
             string LastError() {
                 return g_lastError;
             }

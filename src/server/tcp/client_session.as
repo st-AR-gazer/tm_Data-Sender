@@ -3,6 +3,7 @@ namespace DataSender {
         namespace Tcp {
             class ClientSession {
                 Net::Socket@ socket;
+                string remoteIp;
                 uint connectedAt;
                 uint messagesSent;
                 bool subscribedAll;
@@ -10,6 +11,8 @@ namespace DataSender {
 
                 ClientSession(Net::Socket@ socket, uint connectedAt) {
                     @this.socket = socket;
+                    this.remoteIp = "";
+                    if (socket !is null) this.remoteIp = socket.GetRemoteIP();
                     this.connectedAt = connectedAt;
                     this.messagesSent = 0;
                     this.subscribedAll = true;
@@ -41,6 +44,25 @@ namespace DataSender {
                 bool IsSubscribedTo(const string &in sourceId) {
                     if (subscribedAll) return true;
                     return subscriptions.Find(sourceId) >= 0;
+                }
+
+                string RemoteIP() {
+                    if (remoteIp.Length > 0) return remoteIp;
+                    if (socket is null) return "";
+                    remoteIp = socket.GetRemoteIP();
+                    return remoteIp;
+                }
+
+                string SubscriptionText() {
+                    if (subscribedAll) return "all";
+                    if (subscriptions.Length == 0) return "none";
+
+                    string text = "";
+                    for (uint i = 0; i < subscriptions.Length; i++) {
+                        if (text.Length > 0) text += ", ";
+                        text += subscriptions[i];
+                    }
+                    return text;
                 }
 
                 void SubscribeAll() {
