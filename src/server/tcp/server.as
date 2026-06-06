@@ -125,8 +125,11 @@ namespace DataSender {
                 EnsureRunning();
                 if (!g_running) return;
 
+                bool telemetryRunningAtStart = DataSender::Sender::Service::IsRunning();
                 AcceptClients();
                 UpdateClients();
+                if (!telemetryRunningAtStart || !DataSender::Sender::Service::IsRunning()) return;
+
                 uint now = Time::Now;
                 uint intervalMs = BroadcastIntervalMs();
                 if (intervalMs == 0 || now >= g_lastBroadcastAt + intervalMs) {
@@ -166,7 +169,7 @@ namespace DataSender {
                     g_clients.InsertLast(client);
                     g_totalAccepted++;
                     SendToClient(client, DataSender::Sender::Service::StatusMessage());
-                    SendLatestMessages(client);
+                    if (DataSender::Sender::Service::IsRunning()) SendLatestMessages(client);
                     log(
                         "TCP client connected",
                         LogLevel::Info,

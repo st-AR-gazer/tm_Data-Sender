@@ -118,6 +118,59 @@ namespace DataSender {
                     }
 
                     string command = string(parsed.Get("type", Json::Value("")));
+                    if (command == "service.start" || command == "start") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        DataSender::Sender::Service::Start();
+                        SendServiceControlAck(command, "service started");
+                        return;
+                    }
+
+                    if (command == "service.stop" || command == "stop") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        DataSender::Sender::Service::Stop();
+                        SendServiceControlAck(command, "service stopped");
+                        return;
+                    }
+
+                    if (command == "service.restart" || command == "restart") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        DataSender::Sender::Service::Stop();
+                        DataSender::Sender::Service::Start();
+                        SendServiceControlAck(command, "service restarted");
+                        return;
+                    }
+
+                    if (command == "source.enable") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        HandleSourceSetEnabled(parsed, command, true);
+                        return;
+                    }
+
+                    if (command == "source.disable") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        HandleSourceSetEnabled(parsed, command, false);
+                        return;
+                    }
+
+                    if (command == "source.set_enabled") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        Json::Value@ enabledValue = parsed.Get("enabled");
+                        if (enabledValue is null) {
+                            SendJson(DataSender::Shared::Messages::Error("missing_enabled", "Command requires an enabled boolean", Time::Now));
+                            return;
+                        }
+
+                        bool enabled = bool(parsed.Get("enabled", Json::Value(false)));
+                        HandleSourceSetEnabled(parsed, command, enabled);
+                        return;
+                    }
+
+                    if (command == "source.set_interval") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        HandleSourceSetInterval(parsed, command);
+                        return;
+                    }
+
                     if (command == "subscribe") {
                         array<string> sourceIds = ReadSourceIds(parsed);
                         SetSubscriptions(sourceIds);
@@ -140,12 +193,12 @@ namespace DataSender {
                         return;
                     }
 
-                    if (command == "status") {
+                    if (command == "status" || command == "service.status") {
                         SendJson(DataSender::Sender::Service::StatusMessage());
                         return;
                     }
 
-                    if (command == "sources") {
+                    if (command == "sources" || command == "source.list" || command == "sources.list") {
                         Json::Value data = Json::Object();
                         data["sources"] = DataSender::Sender::SourceRegistry::StatusJson();
                         SendJson(DataSender::Shared::Messages::Ack("sources", "source registry", data, Time::Now));
@@ -153,6 +206,66 @@ namespace DataSender {
                     }
 
                     SendJson(DataSender::Shared::Messages::Error("unknown_command", "Unknown command type: " + command, Time::Now));
+                }
+
+                bool EnsureControlCommandsAllowed(const string &in command) {
+                    if (S_AllowControlCommands) return true;
+
+                    SendJson(DataSender::Shared::Messages::Error("control_commands_disabled", "Control command disabled by TCP server settings: " + command, Time::Now));
+                    return false;
+                }
+
+                void HandleSourceSetEnabled(Json::Value@ commandData, const string &in command, bool enabled) {
+                    string sourceId = ReadSourceId(commandData);
+                    if (sourceId.Length == 0) {
+                        SendJson(DataSender::Shared::Messages::Error("missing_source", "Command requires a source id", Time::Now));
+                        return;
+                    }
+
+                    if (!DataSender::Sender::SourceRegistry::SetEnabled(sourceId, enabled)) {
+                        SendJson(DataSender::Shared::Messages::Error("unknown_source", "Unknown source id: " + sourceId, Time::Now));
+                        return;
+                    }
+
+                    SendSourceControlAck(command, enabled ? "source enabled" : "source disabled", sourceId);
+                }
+
+                void HandleSourceSetInterval(Json::Value@ commandData, const string &in command) {
+                    string sourceId = ReadSourceId(commandData);
+                    if (sourceId.Length == 0) {
+                        SendJson(DataSender::Shared::Messages::Error("missing_source", "Command requires a source id", Time::Now));
+                        return;
+                    }
+
+                    Json::Value@ intervalValue = commandData.Get("intervalMs");
+                    if (intervalValue is null) {
+                        SendJson(DataSender::Shared::Messages::Error("missing_interval", "Command requires intervalMs", Time::Now));
+                        return;
+                    }
+
+                    int intervalMs = int(commandData.Get("intervalMs", Json::Value(1)));
+                    if (!DataSender::Sender::SourceRegistry::SetIntervalMs(sourceId, uint(Math::Clamp(intervalMs, 1, 1000)))) {
+                        SendJson(DataSender::Shared::Messages::Error("unknown_source", "Unknown source id: " + sourceId, Time::Now));
+                        return;
+                    }
+
+                    SendSourceControlAck(command, "source interval updated", sourceId);
+                }
+
+                void SendServiceControlAck(const string &in command, const string &in message) {
+                    Json::Value data = Json::Object();
+                    data["service"] = DataSender::Sender::Service::StatusJson();
+                    SendJson(DataSender::Shared::Messages::Ack(command, message, data, Time::Now));
+                }
+
+                void SendSourceControlAck(
+                    const string &in command,
+                    const string &in message,
+                    const string &in sourceId
+                ) {
+                    Json::Value data = Json::Object();
+                    data["source"] = DataSender::Sender::SourceRegistry::SourceStatusJson(sourceId);
+                    SendJson(DataSender::Shared::Messages::Ack(command, message, data, Time::Now));
                 }
 
                 void Close() {
@@ -165,6 +278,9 @@ namespace DataSender {
                 array<string> sourceIds;
                 if (command is null) return sourceIds;
 
+                string sourceId = ReadSourceId(command);
+                if (sourceId.Length > 0) sourceIds.InsertLast(sourceId);
+
                 Json::Value@ sources = command.Get("sources");
                 if (sources is null) return sourceIds;
 
@@ -174,6 +290,16 @@ namespace DataSender {
                     sourceIds.InsertLast(sourceId);
                 }
                 return sourceIds;
+            }
+
+            string ReadSourceId(Json::Value@ command) {
+                if (command is null) return "";
+
+                string sourceId = string(command.Get("source", Json::Value(""))).Trim();
+                if (sourceId.Length == 0) {
+                    sourceId = string(command.Get("id", Json::Value(""))).Trim();
+                }
+                return sourceId;
             }
         }
     }

@@ -26,6 +26,7 @@ namespace DataSender {
 
                 g_running = true;
                 g_startedAt = Time::Now;
+                g_stoppedAt = 0;
                 g_lastError = "";
                 DataSender::Sender::SourceRegistry::ResetScheduling(g_startedAt);
                 DataSender::Server::Tcp::EnsureRunning();
@@ -37,12 +38,12 @@ namespace DataSender {
 
                 g_running = false;
                 g_stoppedAt = Time::Now;
-                DataSender::Server::Tcp::Stop();
                 log("Service stopped", LogLevel::Info, 57, "Service::Stop");
             }
 
             void Shutdown() {
                 Stop();
+                DataSender::Server::Tcp::Stop();
                 g_initialized = false;
             }
 
@@ -114,10 +115,11 @@ namespace DataSender {
 
             void Update(float dt) {
                 if (!g_initialized) Initialize();
-                if (!g_running) return;
 
-                g_updateCount++;
-                DataSender::Sender::SourceRegistry::Update(dt);
+                if (g_running) {
+                    g_updateCount++;
+                    DataSender::Sender::SourceRegistry::Update(dt);
+                }
                 DataSender::Server::Tcp::Update(dt);
             }
 

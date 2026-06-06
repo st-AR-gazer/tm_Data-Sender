@@ -33,6 +33,10 @@ namespace DataSender {
                     "Enable TCP server",
                     DataSender::Server::Tcp::S_Enabled
                 );
+                DataSender::Server::Tcp::S_AllowControlCommands = UI::Checkbox(
+                    "Allow external control commands",
+                    DataSender::Server::Tcp::S_AllowControlCommands
+                );
                 bool hostChanged = false;
                 UI::SetNextItemWidth(220.0f);
                 string host = UI::InputText(

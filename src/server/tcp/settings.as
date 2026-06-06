@@ -11,6 +11,8 @@ namespace DataSender {
             uint S_BroadcastIntervalMs = 100;
             [Setting hidden name="TCP max clients" min=1 max=64]
             int S_MaxClients = 8;
+            [Setting hidden name="Allow TCP control commands"]
+            bool S_AllowControlCommands = true;
 
             string ConfiguredHost() {
                 string host = S_Host.Trim();

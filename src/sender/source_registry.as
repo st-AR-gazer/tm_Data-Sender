@@ -118,7 +118,7 @@ namespace DataSender {
                 return source !is null && source.enabled;
             }
 
-            void SetEnabled(const string &in id, bool enabled) {
+            bool SetEnabled(const string &in id, bool enabled) {
                 if (id == "race_data") {
                     S_EnableRaceData = enabled;
                 } else if (id == "vehicle_state") {
@@ -127,8 +127,11 @@ namespace DataSender {
                     S_EnableCamera = enabled;
                 } else if (id == "server_info") {
                     S_EnableServerInfo = enabled;
+                } else {
+                    return false;
                 }
                 ApplySettings();
+                return true;
             }
 
             uint IntervalMs(const string &in id) {
@@ -136,7 +139,7 @@ namespace DataSender {
                 return source is null ? 0 : source.intervalMs;
             }
 
-            void SetIntervalMs(const string &in id, uint intervalMs) {
+            bool SetIntervalMs(const string &in id, uint intervalMs) {
                 intervalMs = ClampInterval(intervalMs);
                 if (id == "race_data") {
                     S_RaceDataIntervalMs = intervalMs;
@@ -146,8 +149,11 @@ namespace DataSender {
                     S_CameraIntervalMs = intervalMs;
                 } else if (id == "server_info") {
                     S_ServerInfoIntervalMs = intervalMs;
+                } else {
+                    return false;
                 }
                 ApplySettings();
+                return true;
             }
 
             uint Samples(const string &in id) {
@@ -196,18 +202,28 @@ namespace DataSender {
                 Json::Value sources = Json::Array();
                 for (uint i = 0; i < g_sources.Length; i++) {
                     SourceState@ source = g_sources[i];
-                    Json::Value item = Json::Object();
-                    item["id"] = source.id;
-                    item["label"] = source.label;
-                    item["enabled"] = source.enabled;
-                    item["intervalMs"] = int(source.intervalMs);
-                    item["samples"] = int(source.samples);
-                    item["lastSampleAt"] = int(source.lastSampleAt);
-                    item["hasData"] = source.hasData;
-                    item["lastError"] = source.lastError;
-                    sources.Add(item);
+                    sources.Add(SourceStatusJson(source));
                 }
                 return sources;
+            }
+
+            Json::Value SourceStatusJson(SourceState@ source) {
+                Json::Value item = Json::Object();
+                if (source is null) return item;
+
+                item["id"] = source.id;
+                item["label"] = source.label;
+                item["enabled"] = source.enabled;
+                item["intervalMs"] = int(source.intervalMs);
+                item["samples"] = int(source.samples);
+                item["lastSampleAt"] = int(source.lastSampleAt);
+                item["hasData"] = source.hasData;
+                item["lastError"] = source.lastError;
+                return item;
+            }
+
+            Json::Value SourceStatusJson(const string &in id) {
+                return SourceStatusJson(GetById(id));
             }
 
             uint ClampInterval(uint value) {
