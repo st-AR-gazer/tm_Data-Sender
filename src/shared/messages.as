@@ -40,6 +40,17 @@ namespace DataSender {
                 root["message"] = message;
                 return root;
             }
+
+            Json::Value Ack(const string &in command, const string &in message, const Json::Value &in data, uint t) {
+                Json::Value root = Json::Object();
+                root["type"] = "ack";
+                root["version"] = PROTOCOL_VERSION;
+                root["t"] = int(t);
+                root["command"] = command;
+                root["message"] = message;
+                root["data"] = data;
+                return root;
+            }
         }
     }
 }

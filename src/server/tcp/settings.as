@@ -1,0 +1,30 @@
+namespace DataSender {
+    namespace Server {
+        namespace Tcp {
+            [Setting hidden name="Enable TCP server"]
+            bool S_Enabled = true;
+            [Setting hidden name="TCP host"]
+            string S_Host = "127.0.0.1";
+            [Setting hidden name="TCP port" min=1 max=65535]
+            int S_Port = 8765;
+            [Setting hidden name="TCP broadcast interval" min=16 max=1000]
+            uint S_BroadcastIntervalMs = 100;
+            [Setting hidden name="TCP max clients" min=1 max=64]
+            int S_MaxClients = 8;
+
+            uint16 ConfiguredPort() {
+                S_Port = Math::Clamp(S_Port, 1, 65535);
+                return uint16(S_Port);
+            }
+
+            uint ClampBroadcastInterval() {
+                return S_BroadcastIntervalMs < 16 ? 16 : S_BroadcastIntervalMs;
+            }
+
+            uint MaxClients() {
+                S_MaxClients = Math::Clamp(S_MaxClients, 1, 64);
+                return uint(S_MaxClients);
+            }
+        }
+    }
+}

@@ -28,6 +28,7 @@ namespace DataSender {
                 g_startedAt = Time::Now;
                 g_lastError = "";
                 DataSender::Sender::SourceRegistry::ResetScheduling(g_startedAt);
+                DataSender::Server::Tcp::EnsureRunning();
                 log("Service started", LogLevel::Info, 46, "Service::Start");
             }
 
@@ -36,6 +37,7 @@ namespace DataSender {
 
                 g_running = false;
                 g_stoppedAt = Time::Now;
+                DataSender::Server::Tcp::Stop();
                 log("Service stopped", LogLevel::Info, 57, "Service::Stop");
             }
 
@@ -53,7 +55,7 @@ namespace DataSender {
             }
 
             uint ConnectedClientCount() {
-                return 0;
+                return DataSender::Server::Tcp::ClientCount();
             }
 
             uint RaceDataSamples() {
@@ -108,6 +110,7 @@ namespace DataSender {
 
                 g_updateCount++;
                 DataSender::Sender::SourceRegistry::Update(dt);
+                DataSender::Server::Tcp::Update(dt);
             }
 
             Json::Value StatusJson() {
@@ -124,6 +127,7 @@ namespace DataSender {
                 root["lastVehicleStateAt"] = int(LastVehicleStateAt());
                 root["lastError"] = g_lastError;
                 root["sources"] = DataSender::Sender::SourceRegistry::StatusJson();
+                root["tcp"] = DataSender::Server::Tcp::StatusJson();
                 return root;
             }
 

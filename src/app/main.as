@@ -47,6 +47,11 @@ namespace DataSender {
                 }
             }
             UI::Text("Clients: " + tostring(DataSender::Sender::Service::ConnectedClientCount()));
+            UI::Text("TCP: " + DataSender::Server::Tcp::StatusText() + " " + DataSender::Server::Tcp::AddressText());
+            UI::Text("TCP messages sent: " + tostring(DataSender::Server::Tcp::TotalMessagesSent()));
+            if (DataSender::Server::Tcp::LastError().Length > 0) {
+                UI::Text("\\$f80" + DataSender::Server::Tcp::LastError());
+            }
             UI::Text("Source samples: " + tostring(DataSender::Sender::SourceRegistry::TotalSamples()));
 
             for (uint i = 0; i < DataSender::Sender::SourceRegistry::Count(); i++) {

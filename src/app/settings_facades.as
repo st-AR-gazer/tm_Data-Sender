@@ -11,6 +11,24 @@ namespace DataSender {
                     "Start service on plugin load",
                     DataSender::Sender::Service::S_AutoStart
                 );
+                DataSender::Server::Tcp::S_Enabled = UI::Checkbox(
+                    "TCP server",
+                    DataSender::Server::Tcp::S_Enabled
+                );
+                UI::TextDisabled("Host: " + DataSender::Server::Tcp::S_Host);
+                int tcpPort = DataSender::Server::Tcp::S_Port;
+                UI::SetNextItemWidth(180.0f);
+                tcpPort = UI::InputInt("TCP port", tcpPort);
+                DataSender::Server::Tcp::S_Port = Math::Clamp(tcpPort, 1, 65535);
+                int tcpBroadcastInterval = int(DataSender::Server::Tcp::S_BroadcastIntervalMs);
+                UI::SetNextItemWidth(180.0f);
+                tcpBroadcastInterval = UI::SliderInt("TCP broadcast interval (ms)", tcpBroadcastInterval, 16, 1000);
+                DataSender::Server::Tcp::S_BroadcastIntervalMs = uint(tcpBroadcastInterval);
+
+                int tcpMaxClients = DataSender::Server::Tcp::S_MaxClients;
+                UI::SetNextItemWidth(180.0f);
+                tcpMaxClients = UI::SliderInt("TCP max clients", tcpMaxClients, 1, 64);
+                DataSender::Server::Tcp::S_MaxClients = tcpMaxClients;
 
                 for (uint i = 0; i < DataSender::Sender::SourceRegistry::Count(); i++) {
                     auto source = DataSender::Sender::SourceRegistry::Get(i);
