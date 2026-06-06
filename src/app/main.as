@@ -2,7 +2,6 @@ namespace DataSender {
     namespace App {
         void Main() {
             logging::Initialise();
-
             log(
                 "Loaded " + DataSender::PluginMeta.Name + " v" + DataSender::PluginMeta.Version,
                 LogLevel::Debug,
@@ -36,7 +35,6 @@ namespace DataSender {
         void RenderWindow() {
             UI::Text(DataSender::PluginMeta.Name + " " + DataSender::PluginMeta.Version);
             UI::Separator();
-
             UI::Text("Service: " + DataSender::Sender::Service::StatusText());
             UI::SameLine();
             if (DataSender::Sender::Service::IsRunning()) {
@@ -48,10 +46,16 @@ namespace DataSender {
                     DataSender::Sender::Service::Start();
                 }
             }
-
             UI::Text("Clients: " + tostring(DataSender::Sender::Service::ConnectedClientCount()));
-            UI::Text("Race data samples: " + tostring(DataSender::Sender::Service::RaceDataSamples()));
-            UI::Text("Vehicle state samples: " + tostring(DataSender::Sender::Service::VehicleStateSamples()));
+            UI::Text("Source samples: " + tostring(DataSender::Sender::SourceRegistry::TotalSamples()));
+
+            for (uint i = 0; i < DataSender::Sender::SourceRegistry::Count(); i++) {
+                auto source = DataSender::Sender::SourceRegistry::Get(i);
+                if (source is null) continue;
+
+                string state = source.enabled ? "enabled" : "disabled";
+                UI::Text(source.label + ": " + state + ", " + tostring(source.samples) + " samples");
+            }
         }
     }
 }

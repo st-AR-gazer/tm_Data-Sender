@@ -31,37 +31,26 @@ enum LogLevel {
 namespace logging {
     [Setting category="z~DEV" name="Write a copy of each log line to file" hidden]
     bool S_writeLogToFile = false;
-
     [Setting category="z~DEV" name="Show default OP logs" hidden]
     bool S_showDefaultLogs = true;
-
     [Setting category="z~DEV" name="Show Custom logs" hidden]
     bool DEV_S_sCustom = true;
-
     [Setting category="z~DEV" name="Show Debug logs" hidden]
     bool DEV_S_sDebug = true;
-
     [Setting category="z~DEV" name="Show Info logs" hidden]
     bool DEV_S_sInfo = true;
-
     [Setting category="z~DEV" name="Show Notice logs" hidden]
     bool DEV_S_sNotice = true;
-
     [Setting category="z~DEV" name="Show Warning logs" hidden]
     bool DEV_S_sWarning = true;
-
     [Setting category="z~DEV" name="Show Error logs" hidden]
     bool DEV_S_sError = true;
-
     [Setting category="z~DEV" name="Show Critical logs" hidden]
     bool DEV_S_sCritical = true;
-
     [Setting category="z~DEV" name="Set log level" min=0 max=5 hidden]
     int DEV_S_sLogLevelSlider = 0;
-
     [Setting category="z~DEV" name="Show function name in logs" hidden]
     bool S_showFunctionNameInLogs = true;
-
     [Setting category="z~DEV" name="Set max function name length in logs" min=0 max=50 hidden]
     int S_maxFunctionNameLength = 15;
 
@@ -91,7 +80,6 @@ namespace logging {
     void RotateOldLogFiles() {
         string absFolder = IO::FromStorageFolder(kLogsFolder);
         array<string> @files = IO::IndexFolder(absFolder, false);
-
         int64 earliestMs = Time::Now - int64(kRetentionDays - 1) * kOneDayMs;
         if (earliestMs < 0) earliestMs = 0;
         string earliestKeep = Time::FormatString("%Y-%m-%d", earliestMs);
@@ -116,7 +104,6 @@ namespace logging {
     void UpdateBuildFiles() {
         string curVer = Meta::ExecutingPlugin().Version;
         string latestP = IO::FromStorageFolder(kLogsFolder + kLatestBuildFile);
-
         string prevVer;
         if (IO::FileExists(latestP)) {
             IO::File f;
@@ -124,7 +111,6 @@ namespace logging {
             prevVer = f.ReadLine().Trim();
             f.Close();
         }
-
         if (curVer == prevVer) return;
 
         IO::File f;
@@ -132,13 +118,11 @@ namespace logging {
         f.WriteLine(curVer);
         f.WriteLine("Updated: " + Time::FormatString("%Y-%m-%d %H:%M:%S"));
         f.Close();
-
         Json::Value j = Json::Object();
         j["name"] = Meta::ExecutingPlugin().Name;
         j["version"] = curVer;
         j["updatedAt"] = Time::FormatString("%Y-%m-%dT%H:%M:%SZ");
         j["author"] = Meta::ExecutingPlugin().Author;
-
         IO::File jf;
         jf.Open(IO::FromStorageFolder(kLogsFolder + kBuildJsonFile), IO::FileMode::Write);
         jf.Write(Json::Write(j, true));
@@ -193,19 +177,16 @@ namespace logging {
         UI::Separator();
         S_showDefaultLogs = UI::Checkbox("Mirror standard levels to Openplanet log##" + idPrefix, S_showDefaultLogs);
         S_showFunctionNameInLogs = UI::Checkbox("Show function name in logs##" + idPrefix, S_showFunctionNameInLogs);
-
         int maxFn = S_maxFunctionNameLength;
         UI::SetNextItemWidth(140.0f);
         maxFn = UI::InputInt("Function name width##" + idPrefix, maxFn);
         S_maxFunctionNameLength = Math::Clamp(maxFn, 0, 80);
-
         UI::Separator();
         int minLevel = Math::Clamp(DEV_S_sLogLevelSlider, 0, 5);
         UI::SetNextItemWidth(220.0f);
         minLevel = UI::SliderInt("Minimum standard level##" + idPrefix, minLevel, 0, 5);
         if (minLevel != DEV_S_sLogLevelSlider || minLevel != lastSliderValue) _ApplyLevelPreset(minLevel);
         UI::TextDisabled("Preset: " + _LevelName(minLevel) + " and above");
-
         DEV_S_sCustom = UI::Checkbox("Custom##" + idPrefix, DEV_S_sCustom);
         DEV_S_sDebug = UI::Checkbox("Debug##" + idPrefix, DEV_S_sDebug);
         DEV_S_sInfo = UI::Checkbox("Info##" + idPrefix, DEV_S_sInfo);
@@ -229,7 +210,8 @@ void log(
 
     if (_fnName.Length > logging::S_maxFunctionNameLength) {
         _fnName = _fnName.SubStr(0, logging::S_maxFunctionNameLength);
-    } while (_fnName.Length<logging::S_maxFunctionNameLength) _fnName += " ";
+    }
+    while (_fnName.Length < logging::S_maxFunctionNameLength) _fnName += " ";
     if (!logging::S_showFunctionNameInLogs) _fnName = "";
 
     array<string> tags = {
@@ -248,7 +230,6 @@ void log(
         "\\$c00",
         "\\$f00\\$o\\$i\\$w"
     };
-
     string prefix, body;
     if (level == LogLevel::Custom) {
         prefix = logging::_Tag(_tag, _tagColor);
@@ -259,10 +240,8 @@ void log(
     }
 
     string full = prefix + "\\$z" + body + lineInfo + " : " + _fnName + " : \\$z" + msg;
-
     string ts = Time::FormatString("%Y-%m-%d %H:%M:%S  ");
     logging::AppendToDiagFile(ts + Text::StripOpenplanetFormatCodes(full));
-
     array<bool> enabled = {
         logging::DEV_S_sDebug,
         logging::DEV_S_sInfo,

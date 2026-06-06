@@ -73,7 +73,6 @@ namespace _IO {
 
             int index = trimmedPath.LastIndexOf("/");
             int index2 = trimmedPath.LastIndexOf("\\");
-
             index = Math::Max(index, index2);
 
             if (index == -1) {
@@ -92,7 +91,12 @@ namespace _IO {
 
         void WriteFile(string _path, const string &in content, bool verbose = false) {
             string path = _path;
-            if (verbose) log("Writing to file: " + path, LogLevel::Info, 95, "_IO::File::WriteFile");
+            if (verbose) log(
+                "Writing to file: " + path,
+                LogLevel::Info,
+                95,
+                "_IO::File::WriteFile"
+            );
 
             if (path.EndsWith("/") || path.EndsWith("\\")) {
                 log("Invalid file path: " + path, LogLevel::Error, 98, "_IO::File::WriteFile");
@@ -102,7 +106,6 @@ namespace _IO {
             if (!IO::FolderExists(Path::GetDirectoryName(path))) {
                 IO::CreateFolder(Path::GetDirectoryName(path), true);
             }
-
             IO::File file;
             file.Open(path, IO::FileMode::Write);
             file.Write(content);
@@ -112,7 +115,6 @@ namespace _IO {
         string GetFilePathWithoutFileName(const string &in path) {
             int index = path.LastIndexOf("/");
             int index2 = path.LastIndexOf("\\");
-
             index = Math::Max(index, index2);
 
             if (index == -1) {
@@ -134,7 +136,12 @@ namespace _IO {
 
         // Read from file
         string ReadFileToEnd(const string &in path, bool verbose = false) {
-            if (verbose) log("Reading file: " + path, LogLevel::Info, 137, "_IO::File::ReadFileToEnd");
+            if (verbose) log(
+                "Reading file: " + path,
+                LogLevel::Info,
+                137,
+                "_IO::File::ReadFileToEnd"
+            );
             if (!IO::FileExists(path)) {
                 log("File does not exist: " + path, LogLevel::Error, 139, "_IO::File::ReadFileToEnd");
                 return "";
@@ -163,12 +170,21 @@ namespace _IO {
             const string &in storagePath,
             bool verbose = false
         ) {
-            if (verbose) log("Moving the file content", LogLevel::Info, 166, "_IO::File::ReadSourceFileToEnd");
+            if (verbose) log(
+                "Moving the file content",
+                LogLevel::Info,
+                166,
+                "_IO::File::ReadSourceFileToEnd"
+            );
 
             string fileContents = ReadSourceFileToEnd(originalPath);
             WriteFile(storagePath, fileContents);
-
-            if (verbose) log("Finished moving the file", LogLevel::Info, 171, "_IO::File::ReadSourceFileToEnd");
+            if (verbose) log(
+                "Finished moving the file",
+                LogLevel::Info,
+                171,
+                "_IO::File::ReadSourceFileToEnd"
+            );
 
             // TODO: Must check how IO::Move works with source files
         }
@@ -200,7 +216,12 @@ namespace _IO {
 
         // Rename file
         void RenameFile(const string &in filePath, const string &in newFileName, bool verbose = false) {
-            if (verbose) log("Attempting to rename file: " + filePath, LogLevel::Info, 193, "_IO::File::RenameFile");
+            if (verbose) log(
+                "Attempting to rename file: " + filePath,
+                LogLevel::Info,
+                193,
+                "_IO::File::RenameFile"
+            );
             if (!IO::FileExists(filePath)) {
                 log("File does not exist: " + filePath, LogLevel::Error, 195, "_IO::File::RenameFile");
                 return;
@@ -208,7 +229,6 @@ namespace _IO {
 
             string currentPath = filePath;
             string newPath;
-
             string sanitizedNewName = Path::SanitizeFileName(newFileName);
 
             if (Directory::IsDirectory(newPath)) {
@@ -223,7 +243,6 @@ namespace _IO {
                 string extension = Path::GetExtension(currentPath);
                 newPath = Path::Join(directoryPath, sanitizedNewName + extension);
             }
-
             IO::Move(currentPath, newPath);
         }
     }
@@ -232,7 +251,12 @@ namespace _IO {
         if (IO::FolderExists(path)) {
             OpenExplorerPath(path);
         } else {
-            if (verbose) log("Folder does not exist: " + path, LogLevel::Info, 225, "_IO::OpenFolder");
+            if (verbose) log(
+                "Folder does not exist: " + path,
+                LogLevel::Info,
+                225,
+                "_IO::OpenFolder"
+            );
         }
     }
 }

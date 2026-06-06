@@ -6,30 +6,24 @@ namespace DataSender {
                 S_WindowOpen = UI::Checkbox("Show main window", S_WindowOpen);
                 S_HideWithGame = UI::Checkbox("Hide with game UI", S_HideWithGame);
                 S_HideWithOP = UI::Checkbox("Hide with Openplanet UI", S_HideWithOP);
-
                 UI::Separator();
                 DataSender::Sender::Service::S_AutoStart = UI::Checkbox(
                     "Start service on plugin load",
                     DataSender::Sender::Service::S_AutoStart
                 );
-                DataSender::Sender::Service::S_EnableRaceData = UI::Checkbox(
-                    "Race data source",
-                    DataSender::Sender::Service::S_EnableRaceData
-                );
-                DataSender::Sender::Service::S_EnableVehicleState = UI::Checkbox(
-                    "Vehicle state source",
-                    DataSender::Sender::Service::S_EnableVehicleState
-                );
 
-                int raceDataInterval = int(DataSender::Sender::Service::S_RaceDataIntervalMs);
-                UI::SetNextItemWidth(180.0f);
-                raceDataInterval = UI::SliderInt("Race data interval (ms)", raceDataInterval, 1, 1000);
-                DataSender::Sender::Service::S_RaceDataIntervalMs = uint(raceDataInterval);
+                for (uint i = 0; i < DataSender::Sender::SourceRegistry::Count(); i++) {
+                    auto source = DataSender::Sender::SourceRegistry::Get(i);
+                    if (source is null) continue;
 
-                int vehicleStateInterval = int(DataSender::Sender::Service::S_VehicleStateIntervalMs);
-                UI::SetNextItemWidth(180.0f);
-                vehicleStateInterval = UI::SliderInt("Vehicle state interval (ms)", vehicleStateInterval, 1, 1000);
-                DataSender::Sender::Service::S_VehicleStateIntervalMs = uint(vehicleStateInterval);
+                    bool enabled = DataSender::Sender::SourceRegistry::IsEnabled(source.id);
+                    enabled = UI::Checkbox(source.label + " source##" + source.id, enabled);
+                    DataSender::Sender::SourceRegistry::SetEnabled(source.id, enabled);
+                    int interval = int(DataSender::Sender::SourceRegistry::IntervalMs(source.id));
+                    UI::SetNextItemWidth(180.0f);
+                    interval = UI::SliderInt(source.label + " interval (ms)##" + source.id, interval, 1, 1000);
+                    DataSender::Sender::SourceRegistry::SetIntervalMs(source.id, uint(interval));
+                }
             }
             UI::EndChild();
         }

@@ -8,8 +8,7 @@ namespace DataSender {
             string label;
             string value;
 
-            StatusLine() {
-            }
+            StatusLine() { }
 
             StatusLine(const string &in label, const string &in value) {
                 this.label = label;

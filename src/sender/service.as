@@ -1,175 +1,135 @@
 namespace DataSender {
-namespace Sender {
-namespace Service {
-    [Setting hidden name="Start service on plugin load"]
-    bool S_AutoStart = false;
+    namespace Sender {
+        namespace Service {
+            [Setting hidden name="Start service on plugin load"]
+            bool S_AutoStart = false;
 
-    [Setting hidden name="Enable race data source"]
-    bool S_EnableRaceData = true;
+            bool g_initialized = false;
+            bool g_running = false;
+            uint g_startedAt = 0;
+            uint g_stoppedAt = 0;
+            uint g_updateCount = 0;
+            string g_lastError = "";
 
-    [Setting hidden name="Enable vehicle state source"]
-    bool S_EnableVehicleState = true;
+            void Initialize() {
+                if (g_initialized) return;
 
-    [Setting hidden name="Race data interval" min=1 max=1000]
-    uint S_RaceDataIntervalMs = 100;
+                g_initialized = true;
+                DataSender::Sender::SourceRegistry::Initialize();
+                DataSender::Sender::SourceRegistry::ResetScheduling(Time::Now);
+                if (S_AutoStart) Start();
+            }
 
-    [Setting hidden name="Vehicle state interval" min=1 max=1000]
-    uint S_VehicleStateIntervalMs = 16;
+            void Start() {
+                Initialize();
+                if (g_running) return;
 
-    bool g_initialized = false;
-    bool g_running = false;
+                g_running = true;
+                g_startedAt = Time::Now;
+                g_lastError = "";
+                DataSender::Sender::SourceRegistry::ResetScheduling(g_startedAt);
+                log("Service started", LogLevel::Info, 46, "Service::Start");
+            }
 
-    uint g_startedAt = 0;
-    uint g_stoppedAt = 0;
-    uint g_updateCount = 0;
+            void Stop() {
+                if (!g_running) return;
 
-    uint g_nextRaceDataAt = 0;
-    uint g_nextVehicleStateAt = 0;
+                g_running = false;
+                g_stoppedAt = Time::Now;
+                log("Service stopped", LogLevel::Info, 57, "Service::Stop");
+            }
 
-    uint g_lastRaceDataAt = 0;
-    uint g_lastVehicleStateAt = 0;
+            void Shutdown() {
+                Stop();
+                g_initialized = false;
+            }
 
-    uint g_raceDataSamples = 0;
-    uint g_vehicleStateSamples = 0;
+            bool IsRunning() {
+                return g_running;
+            }
 
-    string g_lastError = "";
+            string StatusText() {
+                return g_running ? "Running" : "Stopped";
+            }
 
-    Json::Value g_latestRaceData;
-    Json::Value g_latestVehicleState;
+            uint ConnectedClientCount() {
+                return 0;
+            }
 
-    void Initialize() {
-        if (g_initialized) return;
+            uint RaceDataSamples() {
+                return DataSender::Sender::SourceRegistry::Samples("race_data");
+            }
 
-        g_initialized = true;
-        ResetScheduling(Time::Now);
+            uint VehicleStateSamples() {
+                return DataSender::Sender::SourceRegistry::Samples("vehicle_state");
+            }
 
-        if (S_AutoStart) Start();
-    }
+            uint LastRaceDataAt() {
+                DataSender::Sender::SourceRegistry::SourceState@ source = DataSender::Sender::SourceRegistry::GetById("race_data");
+                return source is null ? 0 : source.lastSampleAt;
+            }
 
-    void Start() {
-        Initialize();
-        if (g_running) return;
+            uint LastVehicleStateAt() {
+                DataSender::Sender::SourceRegistry::SourceState@ source = DataSender::Sender::SourceRegistry::GetById("vehicle_state");
+                return source is null ? 0 : source.lastSampleAt;
+            }
 
-        g_running = true;
-        g_startedAt = Time::Now;
-        g_lastError = "";
-        ResetScheduling(g_startedAt);
+            uint UpdateCount() {
+                return g_updateCount;
+            }
 
-        log("Service started", LogLevel::Info, 46, "Service::Start");
-    }
+            string LastError() {
+                return g_lastError;
+            }
 
-    void Stop() {
-        if (!g_running) return;
+            Json::Value GetLatestRaceData() {
+                return DataSender::Sender::SourceRegistry::LatestData("race_data");
+            }
 
-        g_running = false;
-        g_stoppedAt = Time::Now;
+            Json::Value GetLatestVehicleState() {
+                return DataSender::Sender::SourceRegistry::LatestData("vehicle_state");
+            }
 
-        log("Service stopped", LogLevel::Info, 57, "Service::Stop");
-    }
+            Json::Value GetLatestRaceDataMessage() {
+                return DataSender::Sender::SourceRegistry::LatestMessage("race_data");
+            }
 
-    void Shutdown() {
-        Stop();
-        g_initialized = false;
-    }
+            Json::Value GetLatestVehicleStateMessage() {
+                return DataSender::Sender::SourceRegistry::LatestMessage("vehicle_state");
+            }
 
-    bool IsRunning() {
-        return g_running;
-    }
+            Json::Value LatestSourceMessages() {
+                return DataSender::Sender::SourceRegistry::AllLatestMessages();
+            }
 
-    string StatusText() {
-        return g_running ? "Running" : "Stopped";
-    }
+            void Update(float dt) {
+                if (!g_initialized) Initialize();
+                if (!g_running) return;
 
-    uint ConnectedClientCount() {
-        return 0;
-    }
+                g_updateCount++;
+                DataSender::Sender::SourceRegistry::Update(dt);
+            }
 
-    uint RaceDataSamples() {
-        return g_raceDataSamples;
-    }
+            Json::Value StatusJson() {
+                Json::Value root = Json::Object();
+                root["running"] = g_running;
+                root["startedAt"] = int(g_startedAt);
+                root["stoppedAt"] = int(g_stoppedAt);
+                root["updates"] = int(g_updateCount);
+                root["clients"] = int(ConnectedClientCount());
+                root["sourceSamples"] = int(DataSender::Sender::SourceRegistry::TotalSamples());
+                root["raceDataSamples"] = int(RaceDataSamples());
+                root["vehicleStateSamples"] = int(VehicleStateSamples());
+                root["lastRaceDataAt"] = int(LastRaceDataAt());
+                root["lastVehicleStateAt"] = int(LastVehicleStateAt());
+                root["lastError"] = g_lastError;
+                root["sources"] = DataSender::Sender::SourceRegistry::StatusJson();
+                return root;
+            }
 
-    uint VehicleStateSamples() {
-        return g_vehicleStateSamples;
-    }
-
-    uint LastRaceDataAt() {
-        return g_lastRaceDataAt;
-    }
-
-    uint LastVehicleStateAt() {
-        return g_lastVehicleStateAt;
-    }
-
-    uint UpdateCount() {
-        return g_updateCount;
-    }
-
-    string LastError() {
-        return g_lastError;
-    }
-
-    Json::Value GetLatestRaceData() {
-        return g_latestRaceData;
-    }
-
-    Json::Value GetLatestVehicleState() {
-        return g_latestVehicleState;
-    }
-
-    void Update(float dt) {
-        if (!g_initialized) Initialize();
-        if (!g_running) return;
-
-        g_updateCount++;
-
-        uint now = Time::Now;
-        if (S_EnableVehicleState && now >= g_nextVehicleStateAt) {
-            PollVehicleState(dt, now);
+            Json::Value StatusMessage() {
+                return DataSender::Shared::Messages::ServiceStatus(StatusJson(), Time::Now);
+            }
         }
-
-        if (S_EnableRaceData && now >= g_nextRaceDataAt) {
-            PollRaceData(now);
-        }
     }
-
-    Json::Value StatusJson() {
-        Json::Value root = Json::Object();
-        root["running"] = g_running;
-        root["startedAt"] = int(g_startedAt);
-        root["stoppedAt"] = int(g_stoppedAt);
-        root["updates"] = int(g_updateCount);
-        root["clients"] = int(ConnectedClientCount());
-        root["raceDataSamples"] = int(g_raceDataSamples);
-        root["vehicleStateSamples"] = int(g_vehicleStateSamples);
-        root["lastRaceDataAt"] = int(g_lastRaceDataAt);
-        root["lastVehicleStateAt"] = int(g_lastVehicleStateAt);
-        root["lastError"] = g_lastError;
-        return root;
-    }
-
-    uint ClampInterval(uint value) {
-        return value < 1 ? 1 : value;
-    }
-
-    void ResetScheduling(uint now) {
-        g_nextRaceDataAt = now;
-        g_nextVehicleStateAt = now;
-    }
-
-    void PollRaceData(uint now) {
-        g_latestRaceData = DataSender::Sources::RaceData::MakeSnapshot();
-        g_lastRaceDataAt = now;
-        g_raceDataSamples++;
-        g_nextRaceDataAt = now + ClampInterval(S_RaceDataIntervalMs);
-    }
-
-    void PollVehicleState(float dt, uint now) {
-        DataSender::Sources::VehicleStateSource::Update(dt);
-        g_latestVehicleState = DataSender::Sources::VehicleStateSource::GetJson();
-        g_lastVehicleStateAt = now;
-        g_vehicleStateSamples++;
-        g_nextVehicleStateAt = now + ClampInterval(S_VehicleStateIntervalMs);
-    }
-}
-}
 }
