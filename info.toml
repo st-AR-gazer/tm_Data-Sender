@@ -5,4 +5,4 @@ version = "0.1.0"
 category = "Utilities"
 
 [script]
-dependencies = [ "MLHook", "MLFeedRaceData", "VehicleState" ]
+optional_dependencies = [ "Camera", "MLHook", "MLFeedRaceData", "VehicleState" ]

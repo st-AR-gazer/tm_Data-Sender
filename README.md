@@ -24,7 +24,6 @@ The current architecture is a local TCP server. External clients connect to the 
 
 Current source IDs:
 
-- `race_data`
-- `vehicle_state`
-- `camera`
-- `server_info`
+- `race_data`: MLFeed race/map/player snapshot
+- `vehicle_state`: local viewed vehicle telemetry
+- `camera`: current render camera and viewed vehicle screen projection

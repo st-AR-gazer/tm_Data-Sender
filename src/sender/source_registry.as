@@ -2,7 +2,7 @@ namespace DataSender {
     namespace Sender {
         namespace SourceRegistry {
             enum SourceKind {
-                RaceData, VehicleState, Camera, ServerInfo
+                RaceData, VehicleState, Camera
             }
 
             [Setting hidden name="Enable race data source"]
@@ -11,16 +11,12 @@ namespace DataSender {
             bool S_EnableVehicleState = true;
             [Setting hidden name="Enable camera source"]
             bool S_EnableCamera = false;
-            [Setting hidden name="Enable server info source"]
-            bool S_EnableServerInfo = false;
             [Setting hidden name="Race data interval" min=1 max=1000]
             uint S_RaceDataIntervalMs = 100;
             [Setting hidden name="Vehicle state interval" min=1 max=1000]
             uint S_VehicleStateIntervalMs = 16;
             [Setting hidden name="Camera interval" min=1 max=1000]
             uint S_CameraIntervalMs = 100;
-            [Setting hidden name="Server info interval" min=1 max=1000]
-            uint S_ServerInfoIntervalMs = 1000;
 
             class SourceState {
                 SourceKind kind;
@@ -69,7 +65,6 @@ namespace DataSender {
                 g_sources.InsertLast(SourceState(SourceKind::RaceData, "race_data", "Race data", S_EnableRaceData, S_RaceDataIntervalMs));
                 g_sources.InsertLast(SourceState(SourceKind::VehicleState, "vehicle_state", "Vehicle state", S_EnableVehicleState, S_VehicleStateIntervalMs));
                 g_sources.InsertLast(SourceState(SourceKind::Camera, "camera", "Camera", S_EnableCamera, S_CameraIntervalMs));
-                g_sources.InsertLast(SourceState(SourceKind::ServerInfo, "server_info", "Server info", S_EnableServerInfo, S_ServerInfoIntervalMs));
                 ApplySettings();
                 ResetScheduling(Time::Now);
             }
@@ -125,8 +120,6 @@ namespace DataSender {
                     S_EnableVehicleState = enabled;
                 } else if (id == "camera") {
                     S_EnableCamera = enabled;
-                } else if (id == "server_info") {
-                    S_EnableServerInfo = enabled;
                 } else {
                     return false;
                 }
@@ -147,8 +140,6 @@ namespace DataSender {
                     S_VehicleStateIntervalMs = intervalMs;
                 } else if (id == "camera") {
                     S_CameraIntervalMs = intervalMs;
-                } else if (id == "server_info") {
-                    S_ServerInfoIntervalMs = intervalMs;
                 } else {
                     return false;
                 }
@@ -246,11 +237,6 @@ namespace DataSender {
                     camera.enabled = S_EnableCamera;
                     camera.intervalMs = ClampInterval(S_CameraIntervalMs);
                 }
-                SourceState@ serverInfo = GetById("server_info");
-                if (serverInfo !is null) {
-                    serverInfo.enabled = S_EnableServerInfo;
-                    serverInfo.intervalMs = ClampInterval(S_ServerInfoIntervalMs);
-                }
             }
 
             void Poll(SourceState@ source, float dt, uint now) {
@@ -278,11 +264,7 @@ namespace DataSender {
                     return DataSender::Sources::VehicleStateSource::GetJson();
                 }
                 if (kind == SourceKind::Camera) {
-                    DataSender::Sources::Camera::Update(dt);
-                    return DataSender::Sources::Camera::GetJson();
-                }
-                if (kind == SourceKind::ServerInfo) {
-                    return DataSender::Sources::ServerInfo::GetJson();
+                    return DataSender::Sources::CameraSource::GetJson();
                 }
                 return Json::Object();
             }

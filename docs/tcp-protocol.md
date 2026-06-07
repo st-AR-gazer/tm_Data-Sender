@@ -56,7 +56,7 @@ Enable or disable multiple sources:
 
 ```json
 {"type":"sources.enable","sources":["race_data","vehicle_state"]}
-{"type":"sources.disable","sources":["camera","server_info"]}
+{"type":"sources.disable","sources":["race_data","camera"]}
 {"type":"sources.set_enabled","sources":["race_data","not_a_source"],"enabled":true}
 ```
 
@@ -152,12 +152,38 @@ Unsubscribe from all sources:
 
 Current source IDs:
 
-```text
-race_data
-vehicle_state
-camera
-server_info
+| Source | Description |
+| --- | --- |
+| `race_data` | MLFeed race/map/player snapshot. |
+| `vehicle_state` | Local viewed vehicle telemetry. |
+| `camera` | Current render camera and viewed vehicle screen projection. |
+
+### Camera Data
+
+The `camera` source reports the current render camera when the Camera dependency
+is available:
+
+```json
+{
+  "available": true,
+  "position": [10.0, 20.0, 30.0],
+  "fov": 90.0,
+  "nearZ": 0.1,
+  "farZ": 10000.0,
+  "aspect": 1.7777778,
+  "drawRect": {
+    "min": [-1.0, -1.0],
+    "max": [1.0, 1.0]
+  },
+  "viewingVehicle": {
+    "worldPosition": [100.0, 20.0, 200.0],
+    "screenPosition": [960.0, 540.0, -1.0],
+    "behindCamera": false
+  }
+}
 ```
+
+If no render camera is available, `available` is `false` with a `reason` field.
 
 ## Server Messages
 

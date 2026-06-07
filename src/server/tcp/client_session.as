@@ -405,9 +405,9 @@ namespace DataSender {
                 if (sources is null) return sourceIds;
 
                 for (uint i = 0; i < sources.Length; i++) {
-                    string sourceId = string(sources[i]).Trim();
-                    if (sourceId.Length == 0) continue;
-                    sourceIds.InsertLast(sourceId);
+                    string listedSourceId = string(sources[i]).Trim();
+                    if (listedSourceId.Length == 0) continue;
+                    sourceIds.InsertLast(listedSourceId);
                 }
                 return sourceIds;
             }
