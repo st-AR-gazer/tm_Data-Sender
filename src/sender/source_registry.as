@@ -16,7 +16,7 @@ namespace DataSender {
             [Setting hidden name="Race data interval" min=1 max=1000]
             uint S_RaceDataIntervalMs = 100;
             [Setting hidden name="Player CP info interval" min=1 max=1000]
-            uint S_PlayerCpInfoIntervalMs = 100;
+            uint S_PlayerCpInfoIntervalMs = 1000;
             [Setting hidden name="Vehicle state interval" min=1 max=1000]
             uint S_VehicleStateIntervalMs = 16;
             [Setting hidden name="Camera interval" min=1 max=1000]

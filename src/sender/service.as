@@ -51,30 +51,8 @@ namespace DataSender {
                 return g_running;
             }
 
-            string StatusText() {
-                return g_running ? "Running" : "Stopped";
-            }
-
             uint ConnectedClientCount() {
                 return DataSender::Server::Tcp::ClientCount();
-            }
-
-            uint RaceDataSamples() {
-                return DataSender::Sender::SourceRegistry::Samples("race_data");
-            }
-
-            uint VehicleStateSamples() {
-                return DataSender::Sender::SourceRegistry::Samples("vehicle_state");
-            }
-
-            uint LastRaceDataAt() {
-                DataSender::Sender::SourceRegistry::SourceState@ source = DataSender::Sender::SourceRegistry::GetById("race_data");
-                return source is null ? 0 : source.lastSampleAt;
-            }
-
-            uint LastVehicleStateAt() {
-                DataSender::Sender::SourceRegistry::SourceState@ source = DataSender::Sender::SourceRegistry::GetById("vehicle_state");
-                return source is null ? 0 : source.lastSampleAt;
             }
 
             uint UpdateCount() {
@@ -91,22 +69,6 @@ namespace DataSender {
 
             string LastError() {
                 return g_lastError;
-            }
-
-            Json::Value GetLatestRaceData() {
-                return DataSender::Sender::SourceRegistry::LatestData("race_data");
-            }
-
-            Json::Value GetLatestVehicleState() {
-                return DataSender::Sender::SourceRegistry::LatestData("vehicle_state");
-            }
-
-            Json::Value GetLatestRaceDataMessage() {
-                return DataSender::Sender::SourceRegistry::LatestMessage("race_data");
-            }
-
-            Json::Value GetLatestVehicleStateMessage() {
-                return DataSender::Sender::SourceRegistry::LatestMessage("vehicle_state");
             }
 
             Json::Value LatestSourceMessages() {
@@ -131,10 +93,6 @@ namespace DataSender {
                 root["updates"] = int(g_updateCount);
                 root["clients"] = int(ConnectedClientCount());
                 root["sourceSamples"] = int(DataSender::Sender::SourceRegistry::TotalSamples());
-                root["raceDataSamples"] = int(RaceDataSamples());
-                root["vehicleStateSamples"] = int(VehicleStateSamples());
-                root["lastRaceDataAt"] = int(LastRaceDataAt());
-                root["lastVehicleStateAt"] = int(LastVehicleStateAt());
                 root["lastError"] = g_lastError;
                 root["sources"] = DataSender::Sender::SourceRegistry::StatusJson();
                 root["tcp"] = DataSender::Server::Tcp::StatusJson();

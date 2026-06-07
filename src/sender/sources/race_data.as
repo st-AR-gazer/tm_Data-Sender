@@ -23,6 +23,8 @@ namespace DataSender {
 
                 for (uint i = 0; i < rd.SortedPlayers_Race.Length; i++) {
                     auto p = cast<MLFeed::PlayerCpInfo_V4>(rd.SortedPlayers_Race[i]);
+                    if (p is null) continue;
+
                     Json::Value pj = Json::Object();
                     pj["name"] = p.Name;
                     pj["login"] = p.Login;
