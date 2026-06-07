@@ -28,9 +28,10 @@ namespace DataSender {
                 string label;
                 bool enabled;
                 uint intervalMs;
-                uint nextSampleAt;
-                uint lastSampleAt;
-                uint samples;
+                uint64 nextSampleAt;
+                uint64 lastSampleAt;
+                uint64 samples;
+                uint64 errors;
                 bool hasData;
                 string lastError;
                 Json::Value latestData;
@@ -51,6 +52,7 @@ namespace DataSender {
                     this.nextSampleAt = 0;
                     this.lastSampleAt = 0;
                     this.samples = 0;
+                    this.errors = 0;
                     this.hasData = false;
                     this.lastError = "";
                     this.latestData = Json::Object();
@@ -74,7 +76,7 @@ namespace DataSender {
                 ResetScheduling(Time::Now);
             }
 
-            void ResetScheduling(uint now) {
+            void ResetScheduling(uint64 now) {
                 Initialize();
                 for (uint i = 0; i < g_sources.Length; i++) {
                     g_sources[i].nextSampleAt = now;
@@ -84,7 +86,7 @@ namespace DataSender {
             void Update(float dt) {
                 Initialize();
                 ApplySettings();
-                uint now = Time::Now;
+                uint64 now = Time::Now;
                 for (uint i = 0; i < g_sources.Length; i++) {
                     SourceState@ source = g_sources[i];
                     if (!source.enabled) continue;
@@ -156,14 +158,14 @@ namespace DataSender {
                 return true;
             }
 
-            uint Samples(const string &in id) {
+            uint64 Samples(const string &in id) {
                 SourceState@ source = GetById(id);
                 return source is null ? 0 : source.samples;
             }
 
-            uint TotalSamples() {
+            uint64 TotalSamples() {
                 Initialize();
-                uint total = 0;
+                uint64 total = 0;
                 for (uint i = 0; i < g_sources.Length; i++) {
                     total += g_sources[i].samples;
                 }
@@ -215,8 +217,9 @@ namespace DataSender {
                 item["label"] = source.label;
                 item["enabled"] = source.enabled;
                 item["intervalMs"] = int(source.intervalMs);
-                item["samples"] = int(source.samples);
-                item["lastSampleAt"] = int(source.lastSampleAt);
+                item["samples"] = DataSender::Toolkit::JsonCounter(source.samples);
+                item["errors"] = DataSender::Toolkit::JsonCounter(source.errors);
+                item["lastSampleAt"] = DataSender::Toolkit::JsonTime(source.lastSampleAt);
                 item["hasData"] = source.hasData;
                 item["lastError"] = source.lastError;
                 return item;
@@ -227,7 +230,9 @@ namespace DataSender {
             }
 
             uint ClampInterval(uint value) {
-                return value < 1 ? 1 : value;
+                if (value < 1) return 1;
+                if (value > 1000) return 1000;
+                return value;
             }
 
             void ApplySettings() {
@@ -253,7 +258,7 @@ namespace DataSender {
                 }
             }
 
-            void Poll(SourceState@ source, float dt, uint now) {
+            void Poll(SourceState@ source, float dt, uint64 now) {
                 if (source is null) return;
 
                 Json::Value data = Json::Object();
@@ -263,7 +268,9 @@ namespace DataSender {
                 } catch {
                     error = getExceptionInfo();
                     if (error.Length == 0) error = "unknown source exception";
+                    error = DataSender::Toolkit::Truncate(error, 512);
                     data = SourceErrorJson(error);
+                    source.errors++;
                     log(
                         "Source poll failed for " + source.id + ": " + error,
                         LogLevel::Warning,

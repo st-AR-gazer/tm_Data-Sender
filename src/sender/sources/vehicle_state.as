@@ -2,7 +2,7 @@ namespace DataSender {
     namespace Sources {
         namespace VehicleStateSource {
             class Snapshot {
-                uint t;  // Time::Now
+                uint64 t;  // Time::Now
                 float spd;  // speed m/s
                 float sspd;  // side speed
                 vec3 pos;  // position
@@ -32,7 +32,7 @@ namespace DataSender {
                 Json::Value ToJson() const {
                     Json::Value o = Json::Object();
                     o["available"] = true;
-                    o["t"] = int(t);
+                    o["t"] = DataSender::Toolkit::JsonTime(t);
                     o["spd"] = spd;
 
 #if SIG_SCHOOL

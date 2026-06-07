@@ -260,3 +260,26 @@ namespace _IO {
         }
     }
 }
+
+namespace DataSender {
+    namespace Toolkit {
+        int64 JsonTime(uint64 value) {
+            return value > uint64(9223372036854775807) ? int64(9223372036854775807) : int64(value);
+        }
+
+        int JsonCounter(uint value) {
+            return value > uint(2147483647) ? 2147483647 : int(value);
+        }
+
+        int64 JsonCounter(uint64 value) {
+            return JsonTime(value);
+        }
+
+        string Truncate(const string &in value, uint maxLength) {
+            int max = int(maxLength);
+            if (value.Length <= max) return value;
+            if (max <= 3) return value.SubStr(0, max);
+            return value.SubStr(0, max - 3) + "...";
+        }
+    }
+}

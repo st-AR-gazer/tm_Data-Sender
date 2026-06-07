@@ -6,9 +6,10 @@ namespace DataSender {
 
             bool g_initialized = false;
             bool g_running = false;
-            uint g_startedAt = 0;
-            uint g_stoppedAt = 0;
-            uint g_updateCount = 0;
+            uint64 g_startedAt = 0;
+            uint64 g_stoppedAt = 0;
+            uint64 g_updateCount = 0;
+            uint64 g_updateErrors = 0;
             string g_lastError = "";
 
             void Initialize() {
@@ -55,16 +56,20 @@ namespace DataSender {
                 return DataSender::Server::Tcp::ClientCount();
             }
 
-            uint UpdateCount() {
+            uint64 UpdateCount() {
                 return g_updateCount;
             }
 
-            uint StartedAt() {
+            uint64 StartedAt() {
                 return g_startedAt;
             }
 
-            uint StoppedAt() {
+            uint64 StoppedAt() {
                 return g_stoppedAt;
+            }
+
+            uint64 UpdateErrors() {
+                return g_updateErrors;
             }
 
             string LastError() {
@@ -76,6 +81,17 @@ namespace DataSender {
             }
 
             void Update(float dt) {
+                try {
+                    UpdateInner(dt);
+                } catch {
+                    g_updateErrors++;
+                    g_lastError = DataSender::Toolkit::Truncate(getExceptionInfo(), 512);
+                    if (g_lastError.Length == 0) g_lastError = "unknown service update exception";
+                    log("Service update failed: " + g_lastError, LogLevel::Warning, 88, "Service::Update");
+                }
+            }
+
+            void UpdateInner(float dt) {
                 if (!g_initialized) Initialize();
 
                 if (g_running) {
@@ -88,11 +104,12 @@ namespace DataSender {
             Json::Value StatusJson() {
                 Json::Value root = Json::Object();
                 root["running"] = g_running;
-                root["startedAt"] = int(g_startedAt);
-                root["stoppedAt"] = int(g_stoppedAt);
-                root["updates"] = int(g_updateCount);
+                root["startedAt"] = DataSender::Toolkit::JsonTime(g_startedAt);
+                root["stoppedAt"] = DataSender::Toolkit::JsonTime(g_stoppedAt);
+                root["updates"] = DataSender::Toolkit::JsonCounter(g_updateCount);
+                root["updateErrors"] = DataSender::Toolkit::JsonCounter(g_updateErrors);
                 root["clients"] = int(ConnectedClientCount());
-                root["sourceSamples"] = int(DataSender::Sender::SourceRegistry::TotalSamples());
+                root["sourceSamples"] = DataSender::Toolkit::JsonCounter(DataSender::Sender::SourceRegistry::TotalSamples());
                 root["lastError"] = g_lastError;
                 root["sources"] = DataSender::Sender::SourceRegistry::StatusJson();
                 root["tcp"] = DataSender::Server::Tcp::StatusJson();

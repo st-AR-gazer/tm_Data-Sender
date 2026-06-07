@@ -3,7 +3,10 @@ namespace DataSender {
         namespace Tcp {
             const int DEFAULT_PORT = 28765;
             const int LEGACY_DEFAULT_PORT = 8765;
-
+            const uint START_RETRY_MS = 3000;
+            const uint ACCEPTS_PER_UPDATE = 8;
+            const uint MAX_COMMAND_ERRORS = 16;
+            const uint MAX_SOURCE_IDS_PER_COMMAND = 32;
             [Setting hidden name="Enable TCP server"]
             bool S_Enabled = true;
             [Setting hidden name="TCP host"]
@@ -16,6 +19,12 @@ namespace DataSender {
             int S_MaxClients = 8;
             [Setting hidden name="Allow TCP control commands"]
             bool S_AllowControlCommands = true;
+            [Setting hidden name="TCP max command bytes" min=1024 max=65536]
+            int S_MaxCommandBytes = 32768;
+            [Setting hidden name="TCP max commands per update" min=1 max=64]
+            int S_MaxCommandsPerUpdate = 16;
+            [Setting hidden name="TCP unsubscribed client timeout" min=0 max=600000]
+            int S_UnsubscribedClientTimeoutMs = 60000;
             [Setting hidden name="Migrated old default TCP port"]
             bool S_MigratedOldDefaultPort = false;
 
@@ -49,6 +58,37 @@ namespace DataSender {
             uint MaxClients() {
                 S_MaxClients = Math::Clamp(S_MaxClients, 1, 64);
                 return uint(S_MaxClients);
+            }
+
+            uint MaxCommandBytes() {
+                S_MaxCommandBytes = Math::Clamp(S_MaxCommandBytes, 1024, 65536);
+                return uint(S_MaxCommandBytes);
+            }
+
+            uint MaxCommandsPerUpdate() {
+                S_MaxCommandsPerUpdate = Math::Clamp(S_MaxCommandsPerUpdate, 1, 64);
+                return uint(S_MaxCommandsPerUpdate);
+            }
+
+            uint UnsubscribedClientTimeoutMs() {
+                S_UnsubscribedClientTimeoutMs = Math::Clamp(S_UnsubscribedClientTimeoutMs, 0, 600000);
+                return uint(S_UnsubscribedClientTimeoutMs);
+            }
+
+            uint StartRetryMs() {
+                return START_RETRY_MS;
+            }
+
+            uint AcceptsPerUpdate() {
+                return ACCEPTS_PER_UPDATE;
+            }
+
+            uint MaxCommandErrors() {
+                return MAX_COMMAND_ERRORS;
+            }
+
+            uint MaxSourceIdsPerCommand() {
+                return MAX_SOURCE_IDS_PER_COMMAND;
             }
         }
     }

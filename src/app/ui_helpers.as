@@ -40,7 +40,7 @@ namespace DataSender {
             return Time::Format(ms, false, true, ms >= 3600000, true);
         }
 
-        string AgeText(uint at) {
+        string AgeText(uint64 at) {
             if (at == 0) return "never";
 
             uint64 now = Time::Now;
@@ -48,7 +48,7 @@ namespace DataSender {
             return FormatDuration(now - uint64(at)) + " ago";
         }
 
-        string ElapsedText(uint since) {
+        string ElapsedText(uint64 since) {
             if (since == 0) return "0 ms";
 
             uint64 now = Time::Now;
@@ -61,7 +61,7 @@ namespace DataSender {
                 return "up " + ElapsedText(DataSender::Sender::Service::StartedAt());
             }
 
-            uint stoppedAt = DataSender::Sender::Service::StoppedAt();
+            uint64 stoppedAt = DataSender::Sender::Service::StoppedAt();
             if (stoppedAt == 0) return "not started";
             return "stopped " + AgeText(stoppedAt);
         }

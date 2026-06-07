@@ -7,10 +7,13 @@ namespace DataSender {
             string g_boundHost = "";
             uint16 g_boundPort = 0;
             string g_lastError = "";
-            uint g_lastBroadcastAt = 0;
-            uint g_nextStartAttemptAt = 0;
-            uint g_totalAccepted = 0;
-            uint g_totalMessagesSent = 0;
+            uint64 g_lastBroadcastAt = 0;
+            uint64 g_nextStartAttemptAt = 0;
+            uint64 g_totalAccepted = 0;
+            uint64 g_totalRejected = 0;
+            uint64 g_totalDisconnected = 0;
+            uint64 g_totalMessagesSent = 0;
+            uint64 g_updateErrors = 0;
 
             bool IsRunning() {
                 return g_running;
@@ -33,12 +36,24 @@ namespace DataSender {
                 return g_clients.Length;
             }
 
-            uint TotalAccepted() {
+            uint64 TotalAccepted() {
                 return g_totalAccepted;
             }
 
-            uint TotalMessagesSent() {
+            uint64 TotalRejected() {
+                return g_totalRejected;
+            }
+
+            uint64 TotalDisconnected() {
+                return g_totalDisconnected;
+            }
+
+            uint64 TotalMessagesSent() {
                 return g_totalMessagesSent;
+            }
+
+            uint64 UpdateErrors() {
+                return g_updateErrors;
             }
 
             ClientSession@ GetClient(uint index) {
@@ -73,10 +88,21 @@ namespace DataSender {
                 string host = ConfiguredHost();
                 uint16 port = ConfiguredPort();
                 @g_listener = Net::Socket();
+                bool listening = false;
+                try {
+                    listening = g_listener.Listen(host, port);
+                } catch {
+                    g_lastError = "Could not listen on " + host + ":" + tostring(port) + ": " + DataSender::Toolkit::Truncate(
+                        getExceptionInfo(),
+                        512
+                    );
+                }
 
-                if (!g_listener.Listen(host, port)) {
-                    g_lastError = "Could not listen on " + host + ":" + tostring(port);
-                    g_nextStartAttemptAt = Time::Now + 3000;
+                if (!listening) {
+                    if (g_lastError.Length == 0) {
+                        g_lastError = "Could not listen on " + host + ":" + tostring(port);
+                    }
+                    g_nextStartAttemptAt = Time::Now + StartRetryMs();
                     @g_listener = null;
                     log(
                         g_lastError,
@@ -105,7 +131,11 @@ namespace DataSender {
             void Stop() {
                 CloseClients();
                 if (g_listener !is null) {
-                    g_listener.Close();
+                    try {
+                        g_listener.Close();
+                    } catch {
+                        RecordError("TCP listener close failed: " + getExceptionInfo(), 102, "Tcp::Stop");
+                    }
                     @g_listener = null;
                 }
                 if (g_running) {
@@ -122,6 +152,17 @@ namespace DataSender {
             }
 
             void Update(float dt) {
+                try {
+                    UpdateInner(dt);
+                } catch {
+                    g_updateErrors++;
+                    RecordError("TCP update failed: " + getExceptionInfo(), 130, "Tcp::Update");
+                    Stop();
+                    g_nextStartAttemptAt = Time::Now + StartRetryMs();
+                }
+            }
+
+            void UpdateInner(float dt) {
                 EnsureRunning();
                 if (!g_running) return;
 
@@ -130,7 +171,7 @@ namespace DataSender {
                 UpdateClients();
                 if (!telemetryRunningAtStart || !DataSender::Sender::Service::IsRunning()) return;
 
-                uint now = Time::Now;
+                uint64 now = Time::Now;
                 uint intervalMs = BroadcastIntervalMs();
                 if (intervalMs == 0 || now >= g_lastBroadcastAt + intervalMs) {
                     g_lastBroadcastAt = now;
@@ -146,8 +187,11 @@ namespace DataSender {
                 root["port"] = int(ConfiguredPort());
                 root["clients"] = int(ClientCount());
                 root["maxClients"] = S_MaxClients;
-                root["totalAccepted"] = int(g_totalAccepted);
-                root["messagesSent"] = int(g_totalMessagesSent);
+                root["totalAccepted"] = DataSender::Toolkit::JsonCounter(g_totalAccepted);
+                root["totalRejected"] = DataSender::Toolkit::JsonCounter(g_totalRejected);
+                root["totalDisconnected"] = DataSender::Toolkit::JsonCounter(g_totalDisconnected);
+                root["messagesSent"] = DataSender::Toolkit::JsonCounter(g_totalMessagesSent);
+                root["updateErrors"] = DataSender::Toolkit::JsonCounter(g_updateErrors);
                 root["lastError"] = g_lastError;
                 return root;
             }
@@ -155,13 +199,21 @@ namespace DataSender {
             void AcceptClients() {
                 if (g_listener is null) return;
 
-                for (uint i = 0; i < 8; i++) {
-                    Net::Socket@ socket = g_listener.Accept();
+                for (uint i = 0; i < AcceptsPerUpdate(); i++) {
+                    Net::Socket@ socket = null;
+                    try {
+                        @socket = g_listener.Accept();
+                    } catch {
+                        g_updateErrors++;
+                        RecordError("TCP accept failed: " + getExceptionInfo(), 175, "Tcp::AcceptClients");
+                        Stop();
+                        return;
+                    }
                     if (socket is null) break;
 
                     if (g_clients.Length >= MaxClients()) {
-                        socket.WriteLine(Json::Write(DataSender::Shared::Messages::Error("max_clients", "DataSender TCP server is full", Time::Now), false));
-                        socket.Close();
+                        g_totalRejected++;
+                        SendErrorAndClose(socket, "max_clients", "DataSender TCP server is full");
                         continue;
                     }
 
@@ -179,13 +231,16 @@ namespace DataSender {
             }
 
             void UpdateClients() {
+                uint64 now = Time::Now;
                 for (int i = int(g_clients.Length) - 1; i >= 0; i--) {
                     ClientSession@ client = g_clients[uint(i)];
-                    if (client is null || !client.IsAlive()) {
+                    if (client is null || !client.IsAlive(now)) {
                         CloseClientAt(uint(i));
                         continue;
                     }
-                    client.DrainIncoming();
+                    if (!client.DrainIncoming(now)) {
+                        CloseClientAt(uint(i));
+                    }
                 }
             }
 
@@ -232,7 +287,7 @@ namespace DataSender {
                 if (sourceId.Length == 0 || sourceId == "service") return true;
                 if (!client.IsSubscribedTo(sourceId)) return false;
 
-                uint seq = MessageSeq(message);
+                uint64 seq = MessageSeq(message);
                 if (client.HasSentSourceSeq(sourceId, seq)) return false;
                 return true;
             }
@@ -260,23 +315,50 @@ namespace DataSender {
                 return string(message.Get("source", Json::Value("")));
             }
 
-            uint MessageSeq(const Json::Value &in message) {
-                int seq = int(message.Get("seq", Json::Value(0)));
-                if (seq <= 0) return 0;
-                return uint(seq);
+            uint64 MessageSeq(const Json::Value &in message) {
+                uint64 seq = uint64(message.Get("seq", Json::Value(0)));
+                return seq;
             }
 
             void CloseClientAt(uint index) {
                 if (index >= g_clients.Length) return;
                 if (g_clients[index] !is null) g_clients[index].Close();
                 g_clients.RemoveAt(index);
+                g_totalDisconnected++;
             }
 
             void CloseClients() {
+                uint64 closed = 0;
                 for (uint i = 0; i < g_clients.Length; i++) {
-                    if (g_clients[i] !is null) g_clients[i].Close();
+                    if (g_clients[i] !is null) {
+                        g_clients[i].Close();
+                        closed++;
+                    }
                 }
                 g_clients.RemoveRange(0, g_clients.Length);
+                g_totalDisconnected += closed;
+            }
+
+            void SendErrorAndClose(Net::Socket@ socket, const string &in code, const string &in message) {
+                if (socket is null) return;
+                try {
+                    socket.WriteLine(Json::Write(DataSender::Shared::Messages::Error(code, message, Time::Now), false));
+                } catch {
+                }
+                try {
+                    socket.Close();
+                } catch {
+                }
+            }
+
+            void RecordError(const string &in message, int line, const string &in fn) {
+                g_lastError = DataSender::Toolkit::Truncate(message, 512);
+                log(
+                    g_lastError,
+                    LogLevel::Warning,
+                    line,
+                    fn
+                );
             }
         }
     }

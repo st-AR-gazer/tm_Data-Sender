@@ -12,6 +12,9 @@ namespace DataSender {
                 UI::Text("Current state: " + ServiceStateText());
                 UI::Text("Runtime: " + ServiceDetailText());
                 UI::Text("Updates: " + tostring(DataSender::Sender::Service::UpdateCount()));
+                if (DataSender::Sender::Service::UpdateErrors() > 0) {
+                    UI::Text("Update errors: " + ErrorText(tostring(DataSender::Sender::Service::UpdateErrors())));
+                }
                 RenderServiceControlButtons("settings-general");
             }
             UI::EndChild();
@@ -24,6 +27,10 @@ namespace DataSender {
                 UI::Text("Address: " + DataSender::Server::Tcp::AddressText());
                 UI::Text("Clients: " + tostring(DataSender::Server::Tcp::ClientCount()) + " / " + tostring(DataSender::Server::Tcp::MaxClients()));
                 UI::Text("Messages sent: " + tostring(DataSender::Server::Tcp::TotalMessagesSent()));
+                UI::Text("Accepted: " + tostring(DataSender::Server::Tcp::TotalAccepted()) + " | Rejected: " + tostring(DataSender::Server::Tcp::TotalRejected()) + " | Disconnected: " + tostring(DataSender::Server::Tcp::TotalDisconnected()));
+                if (DataSender::Server::Tcp::UpdateErrors() > 0) {
+                    UI::Text("TCP errors: " + ErrorText(tostring(DataSender::Server::Tcp::UpdateErrors())));
+                }
                 if (UI::Button("Copy address##settings-tcp-copy-address")) {
                     IO::SetClipboard(DataSender::Server::Tcp::AddressText());
                 }

@@ -4,43 +4,99 @@ namespace DataSender {
             class ClientSession {
                 Net::Socket@ socket;
                 string remoteIp;
-                uint connectedAt;
-                uint messagesSent;
+                uint64 connectedAt;
+                uint64 lastReceivedAt;
+                uint64 lastSentAt;
+                uint64 messagesSent;
+                uint64 commandErrors;
                 bool subscribedAll;
                 array<string> subscriptions;
                 array<string> lastSentSourceIds;
-                array<uint> lastSentSourceSeqs;
+                array<uint64> lastSentSourceSeqs;
 
-                ClientSession(Net::Socket@ socket, uint connectedAt) {
+                ClientSession(Net::Socket@ socket, uint64 connectedAt) {
                     @this.socket = socket;
                     this.remoteIp = "";
                     if (socket !is null) this.remoteIp = socket.GetRemoteIP();
                     this.connectedAt = connectedAt;
+                    this.lastReceivedAt = 0;
+                    this.lastSentAt = 0;
                     this.messagesSent = 0;
+                    this.commandErrors = 0;
                     this.subscribedAll = false;
                 }
 
                 bool IsAlive() {
-                    return socket !is null && !socket.IsHungUp();
+                    return IsAlive(Time::Now);
                 }
 
-                void DrainIncoming() {
-                    if (socket is null) return;
+                bool IsAlive(uint64 now) {
+                    if (socket is null || socket.IsHungUp()) return false;
+
+                    uint timeoutMs = UnsubscribedClientTimeoutMs();
+                    if (timeoutMs > 0 && !HasSubscriptions() && now >= connectedAt + timeoutMs) {
+                        return false;
+                    }
+                    return true;
+                }
+
+                bool DrainIncoming(uint64 now) {
+                    if (socket is null) return false;
+
+                    int available = 0;
+                    try {
+                        available = socket.Available();
+                    } catch {
+                        SendJson(DataSender::Shared::Messages::Error("socket_error", "Could not inspect client socket", now));
+                        return false;
+                    }
+
+                    int maxCommandBytes = int(MaxCommandBytes());
+                    if (available > maxCommandBytes) {
+                        SendJson(DataSender::Shared::Messages::Error("command_too_large", "Command buffer exceeded maximum size", now));
+                        return false;
+                    }
 
                     string line;
-                    for (uint i = 0; i < 16; i++) {
-                        if (!socket.ReadLine(line)) break;
+                    for (uint i = 0; i < MaxCommandsPerUpdate(); i++) {
+                        bool read = false;
+                        try {
+                            read = socket.ReadLine(line);
+                        } catch {
+                            SendJson(DataSender::Shared::Messages::Error("socket_error", "Could not read client command", now));
+                            return false;
+                        }
+                        if (!read) break;
+
+                        lastReceivedAt = now;
                         line = line.Trim();
                         if (line.Length == 0) continue;
-                        HandleCommand(line);
+                        if (line.Length > maxCommandBytes) {
+                            SendJson(DataSender::Shared::Messages::Error("command_too_large", "Command line exceeded maximum size", now));
+                            return false;
+                        }
+                        if (!HandleCommandSafe(line)) return false;
                     }
+                    return true;
                 }
 
                 bool SendJson(const Json::Value &in message) {
                     if (!IsAlive()) return false;
-                    bool ok = socket.WriteLine(Json::Write(message, false));
-                    if (ok) messagesSent++;
+                    bool ok = false;
+                    try {
+                        ok = socket.WriteLine(Json::Write(message, false));
+                    } catch {
+                        return false;
+                    }
+                    if (ok) {
+                        messagesSent++;
+                        lastSentAt = Time::Now;
+                    }
                     return ok;
+                }
+
+                bool HasSubscriptions() {
+                    return subscribedAll || subscriptions.Length > 0;
                 }
 
                 bool IsSubscribedTo(const string &in sourceId) {
@@ -48,18 +104,18 @@ namespace DataSender {
                     return subscriptions.Find(sourceId) >= 0;
                 }
 
-                uint LastSentSourceSeq(const string &in sourceId) {
+                uint64 LastSentSourceSeq(const string &in sourceId) {
                     int index = lastSentSourceIds.Find(sourceId);
                     if (index < 0) return 0;
                     return lastSentSourceSeqs[uint(index)];
                 }
 
-                bool HasSentSourceSeq(const string &in sourceId, uint seq) {
+                bool HasSentSourceSeq(const string &in sourceId, uint64 seq) {
                     if (sourceId.Length == 0 || seq == 0) return false;
                     return LastSentSourceSeq(sourceId) >= seq;
                 }
 
-                void MarkSourceSeqSent(const string &in sourceId, uint seq) {
+                void MarkSourceSeqSent(const string &in sourceId, uint64 seq) {
                     if (sourceId.Length == 0 || seq == 0) return;
 
                     int index = lastSentSourceIds.Find(sourceId);
@@ -179,9 +235,23 @@ namespace DataSender {
                     return IsAllSourceId(sourceId) ? "all" : sourceId;
                 }
 
+                bool HandleCommandSafe(const string &in line) {
+                    try {
+                        HandleCommand(line);
+                        return commandErrors < MaxCommandErrors();
+                    } catch {
+                        string error = DataSender::Toolkit::Truncate(getExceptionInfo(), 512);
+                        if (error.Length == 0) error = "unknown command exception";
+                        commandErrors++;
+                        SendJson(DataSender::Shared::Messages::Error("command_error", error, Time::Now));
+                        return commandErrors < MaxCommandErrors();
+                    }
+                }
+
                 void HandleCommand(const string &in line) {
                     Json::Value@ parsed = Json::Parse(line);
                     if (parsed is null) {
+                        commandErrors++;
                         SendJson(DataSender::Shared::Messages::Error("invalid_json", "Command must be a JSON object line", Time::Now));
                         return;
                     }
@@ -394,7 +464,12 @@ namespace DataSender {
                 }
 
                 void Close() {
-                    if (socket !is null) socket.Close();
+                    if (socket !is null) {
+                        try {
+                            socket.Close();
+                        } catch {
+                        }
+                    }
                     @socket = null;
                 }
             }
@@ -410,6 +485,7 @@ namespace DataSender {
                 if (sources is null) return sourceIds;
 
                 for (uint i = 0; i < sources.Length; i++) {
+                    if (sourceIds.Length >= MaxSourceIdsPerCommand()) break;
                     string listedSourceId = string(sources[i]).Trim();
                     if (listedSourceId.Length == 0) continue;
                     sourceIds.InsertLast(listedSourceId);
