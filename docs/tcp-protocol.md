@@ -4,7 +4,7 @@ Data Sender runs a local TCP server.
 
 Default address:
 ```text
-127.0.0.1:8765
+127.0.0.1:28765
 ```
 
 ## Common Flow

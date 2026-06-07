@@ -13,12 +13,13 @@ The current architecture is a local TCP server. External clients connect to the 
 1. Open the Data Sender settings in Openplanet.
 2. Enable the TCP server.
 3. Start the Data Sender service from settings, the render menu, or an external command.
-4. Connect to `127.0.0.1:8765`.
+4. Connect to `127.0.0.1:28765`.
 
 ## Docs
 
 - [TCP protocol](docs/tcp-protocol.md)
 - [Python TCP example](docs/examples/tcp_client.py)
+- [Python TCP smoke test](docs/examples/tcp_smoke_test.py)
 
 ## Sources
 
