@@ -254,7 +254,24 @@ namespace DataSender {
             }
 
             void Poll(SourceState@ source, float dt, uint now) {
-                source.latestData = ReadSource(source.kind, dt);
+                if (source is null) return;
+
+                Json::Value data = Json::Object();
+                string error = "";
+                try {
+                    data = ReadSource(source.kind, dt);
+                } catch {
+                    error = getExceptionInfo();
+                    if (error.Length == 0) error = "unknown source exception";
+                    data = SourceErrorJson(error);
+                    log(
+                        "Source poll failed for " + source.id + ": " + error,
+                        LogLevel::Warning,
+                        264,
+                        "SourceRegistry::Poll"
+                    );
+                }
+                source.latestData = data;
                 source.hasData = true;
                 source.lastSampleAt = now;
                 source.samples++;
@@ -266,7 +283,15 @@ namespace DataSender {
                     source.samples
                 );
                 source.nextSampleAt = now + ClampInterval(source.intervalMs);
-                source.lastError = "";
+                source.lastError = error;
+            }
+
+            Json::Value SourceErrorJson(const string &in error) {
+                Json::Value root = Json::Object();
+                root["available"] = false;
+                root["reason"] = "source_error";
+                root["error"] = error;
+                return root;
             }
 
             Json::Value ReadSource(SourceKind kind, float dt) {

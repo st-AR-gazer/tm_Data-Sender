@@ -17,7 +17,7 @@ namespace DataSender {
                     if (socket !is null) this.remoteIp = socket.GetRemoteIP();
                     this.connectedAt = connectedAt;
                     this.messagesSent = 0;
-                    this.subscribedAll = true;
+                    this.subscribedAll = false;
                 }
 
                 bool IsAlive() {
@@ -267,7 +267,10 @@ namespace DataSender {
 
                     if (command == "subscribe") {
                         array<string> sourceIds = ReadSourceIds(parsed);
-                        SendJson(DataSender::Shared::Messages::Ack("subscribe", "subscriptions updated", SetSubscriptions(sourceIds), Time::Now));
+                        Json::Value result = SetSubscriptions(sourceIds);
+                        if (SendJson(DataSender::Shared::Messages::Ack("subscribe", "subscriptions updated", result, Time::Now))) {
+                            DataSender::Server::Tcp::SendLatestMessages(this);
+                        }
                         return;
                     }
 
@@ -276,7 +279,9 @@ namespace DataSender {
                         Json::Value accepted = Json::Array();
                         accepted.Add("all");
                         Json::Value rejected = Json::Array();
-                        SendJson(DataSender::Shared::Messages::Ack("subscribe_all", "subscribed to all sources", SubscriptionResultJson(accepted, rejected), Time::Now));
+                        if (SendJson(DataSender::Shared::Messages::Ack("subscribe_all", "subscribed to all sources", SubscriptionResultJson(accepted, rejected), Time::Now))) {
+                            DataSender::Server::Tcp::SendLatestMessages(this);
+                        }
                         return;
                     }
 

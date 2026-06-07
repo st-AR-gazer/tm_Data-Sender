@@ -169,7 +169,6 @@ namespace DataSender {
                     g_clients.InsertLast(client);
                     g_totalAccepted++;
                     SendToClient(client, DataSender::Sender::Service::StatusMessage());
-                    if (DataSender::Sender::Service::IsRunning()) SendLatestMessages(client);
                     log(
                         "TCP client connected",
                         LogLevel::Info,

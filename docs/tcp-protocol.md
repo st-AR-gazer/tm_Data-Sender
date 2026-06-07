@@ -9,18 +9,25 @@ Default address:
 
 ## Common Flow
 
-Start the service:
+Clients start subscribed to no telemetry sources. After connecting, send the subscription request for the source data you want:
 
 ```json
-{"type":"service.start"}
+{"type":"subscribe","sources":["vehicle_state"]}
 ```
 
-Enable and subscribe to vehicle state:
+The server acknowledges the subscription and immediately sends the latest matching source snapshots it already has.
+
+Enable and configure vehicle state if needed:
 
 ```json
 {"type":"source.set_enabled","source":"vehicle_state","enabled":true}
 {"type":"source.set_interval","source":"vehicle_state","intervalMs":16}
-{"type":"subscribe","sources":["vehicle_state"]}
+```
+
+Start the service:
+
+```json
+{"type":"service.start"}
 ```
 
 Read newline-delimited messages until the connection closes.
@@ -128,11 +135,15 @@ The response reports which source IDs were accepted and which were rejected:
 }
 ```
 
+After the acknowledgement, the server immediately sends the latest already sampled snapshots for the accepted subscriptions. If the service has not sampled those sources yet, the snapshots will arrive on the next matching service update.
+
 Subscribe to all sources:
 
 ```json
 {"type":"subscribe_all"}
 ```
+
+`subscribe_all` also immediately flushes the latest already sampled snapshots for all sources.
 
 Unsubscribe from specific sources:
 
@@ -163,10 +174,22 @@ Source payloads include an `available` field. If a source exists but cannot
 produce data, it sends `available: false` with a `reason` field instead of an
 empty value.
 
+If a source throws while being sampled, the sender keeps running and emits a
+source error payload:
+
+```json
+{
+  "available": false,
+  "reason": "source_error",
+  "error": "exception details"
+}
+```
+
 Common unavailable reasons:
 
 | Source | Reason |
 | --- | --- |
+| Any source | `source_error` |
 | `race_data` | `mlfeed_race_data_dependency_unavailable`, `no_race_data` |
 | `player_cp_info` | `mlfeed_race_data_dependency_unavailable`, `no_race_data` |
 | `vehicle_state` | `vehicle_state_dependency_unavailable`, `no_viewing_player_state`, `not_sampled_yet` |

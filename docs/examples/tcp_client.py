@@ -37,14 +37,13 @@ def main():
     args = parser.parse_args()
 
     with socket.create_connection((args.host, args.port)) as sock:
-        if args.start:
-            send(sock, {"type": "service.start"})
-
+        send(sock, {"type": "subscribe", "sources": args.source})
         send(
             sock,
             {"type": "sources.set_enabled", "sources": args.source, "enabled": True},
         )
-        send(sock, {"type": "subscribe", "sources": args.source})
+        if args.start:
+            send(sock, {"type": "service.start"})
         send(sock, {"type": "service.status"})
 
         print(f"Connected to {args.host}:{args.port}; press Ctrl+C to stop.")
