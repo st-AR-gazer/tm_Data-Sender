@@ -40,11 +40,10 @@ def main():
         if args.start:
             send(sock, {"type": "service.start"})
 
-        for source in args.source:
-            send(
-                sock, {"type": "source.set_enabled", "source": source, "enabled": True}
-            )
-
+        send(
+            sock,
+            {"type": "sources.set_enabled", "sources": args.source, "enabled": True},
+        )
         send(sock, {"type": "subscribe", "sources": args.source})
         send(sock, {"type": "service.status"})
 

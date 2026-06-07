@@ -52,6 +52,38 @@ Enable or disable one source:
 {"type":"source.set_enabled","source":"vehicle_state","enabled":true}
 ```
 
+Enable or disable multiple sources:
+
+```json
+{"type":"sources.enable","sources":["race_data","vehicle_state"]}
+{"type":"sources.disable","sources":["camera","server_info"]}
+{"type":"sources.set_enabled","sources":["race_data","not_a_source"],"enabled":true}
+```
+
+Batch source commands report accepted and rejected source IDs:
+
+```json
+{
+  "type": "ack",
+  "version": 1,
+  "t": 123456,
+  "command": "sources.set_enabled",
+  "message": "sources enabled",
+  "data": {
+    "accepted": ["race_data"],
+    "rejected": ["not_a_source"],
+    "sources": [
+      {
+        "id": "race_data",
+        "label": "Race data",
+        "enabled": true,
+        "intervalMs": 100
+      }
+    ]
+  }
+}
+```
+
 Set one source interval:
 
 ```json

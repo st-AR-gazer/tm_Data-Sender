@@ -221,6 +221,18 @@ namespace DataSender {
                         return;
                     }
 
+                    if (command == "sources.enable") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        HandleSourcesSetEnabled(parsed, command, true);
+                        return;
+                    }
+
+                    if (command == "sources.disable") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        HandleSourcesSetEnabled(parsed, command, false);
+                        return;
+                    }
+
                     if (command == "source.set_enabled") {
                         if (!EnsureControlCommandsAllowed(command)) return;
                         Json::Value@ enabledValue = parsed.Get("enabled");
@@ -231,6 +243,19 @@ namespace DataSender {
 
                         bool enabled = bool(parsed.Get("enabled", Json::Value(false)));
                         HandleSourceSetEnabled(parsed, command, enabled);
+                        return;
+                    }
+
+                    if (command == "sources.set_enabled") {
+                        if (!EnsureControlCommandsAllowed(command)) return;
+                        Json::Value@ enabledValue = parsed.Get("enabled");
+                        if (enabledValue is null) {
+                            SendJson(DataSender::Shared::Messages::Error("missing_enabled", "Command requires an enabled boolean", Time::Now));
+                            return;
+                        }
+
+                        bool enabled = bool(parsed.Get("enabled", Json::Value(false)));
+                        HandleSourcesSetEnabled(parsed, command, enabled);
                         return;
                     }
 
@@ -296,6 +321,33 @@ namespace DataSender {
                     }
 
                     SendSourceControlAck(command, enabled ? "source enabled" : "source disabled", sourceId);
+                }
+
+                void HandleSourcesSetEnabled(Json::Value@ commandData, const string &in command, bool enabled) {
+                    array<string> sourceIds = ReadSourceIds(commandData);
+                    if (sourceIds.Length == 0) {
+                        SendJson(DataSender::Shared::Messages::Error("missing_source", "Command requires source ids", Time::Now));
+                        return;
+                    }
+
+                    Json::Value accepted = Json::Array();
+                    Json::Value rejected = Json::Array();
+                    Json::Value sources = Json::Array();
+
+                    for (uint i = 0; i < sourceIds.Length; i++) {
+                        string sourceId = sourceIds[i];
+                        if (DataSender::Sender::SourceRegistry::SetEnabled(sourceId, enabled)) {
+                            accepted.Add(sourceId);
+                            sources.Add(DataSender::Sender::SourceRegistry::SourceStatusJson(sourceId));
+                        } else {
+                            rejected.Add(sourceId);
+                        }
+                    }
+                    Json::Value data = Json::Object();
+                    data["accepted"] = accepted;
+                    data["rejected"] = rejected;
+                    data["sources"] = sources;
+                    SendJson(DataSender::Shared::Messages::Ack(command, enabled ? "sources enabled" : "sources disabled", data, Time::Now));
                 }
 
                 void HandleSourceSetInterval(Json::Value@ commandData, const string &in command) {
