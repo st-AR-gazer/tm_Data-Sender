@@ -96,33 +96,60 @@ namespace DataSender {
                     subscriptions.RemoveRange(0, subscriptions.Length);
                 }
 
-                void SetSubscriptions(const array<string> &in sourceIds) {
+                Json::Value SetSubscriptions(const array<string> &in sourceIds) {
+                    Json::Value accepted = Json::Array();
+                    Json::Value rejected = Json::Array();
                     subscribedAll = false;
                     subscriptions.RemoveRange(0, subscriptions.Length);
 
                     for (uint i = 0; i < sourceIds.Length; i++) {
-                        AddSubscription(sourceIds[i]);
+                        if (AddSubscription(sourceIds[i])) {
+                            accepted.Add(NormalizedSubscriptionSourceId(sourceIds[i]));
+                        } else {
+                            rejected.Add(sourceIds[i]);
+                        }
                     }
+
+                    return SubscriptionResultJson(accepted, rejected);
                 }
 
-                void AddSubscription(const string &in sourceId) {
-                    if (sourceId == "*" || sourceId == "all") {
+                bool AddSubscription(const string &in sourceId) {
+                    if (IsAllSourceId(sourceId)) {
                         SubscribeAll();
-                        return;
+                        return true;
                     }
-                    if (DataSender::Sender::SourceRegistry::GetById(sourceId) is null) return;
+                    if (DataSender::Sender::SourceRegistry::GetById(sourceId) is null) return false;
+                    if (subscribedAll) return true;
                     if (subscriptions.Find(sourceId) < 0) subscriptions.InsertLast(sourceId);
+                    return true;
                 }
 
-                void RemoveSubscription(const string &in sourceId) {
-                    if (sourceId == "*" || sourceId == "all") {
+                Json::Value RemoveSubscriptions(const array<string> &in sourceIds) {
+                    Json::Value accepted = Json::Array();
+                    Json::Value rejected = Json::Array();
+
+                    for (uint i = 0; i < sourceIds.Length; i++) {
+                        if (RemoveSubscription(sourceIds[i])) {
+                            accepted.Add(NormalizedSubscriptionSourceId(sourceIds[i]));
+                        } else {
+                            rejected.Add(sourceIds[i]);
+                        }
+                    }
+
+                    return SubscriptionResultJson(accepted, rejected);
+                }
+
+                bool RemoveSubscription(const string &in sourceId) {
+                    if (IsAllSourceId(sourceId)) {
                         subscribedAll = false;
                         subscriptions.RemoveRange(0, subscriptions.Length);
-                        return;
+                        return true;
                     }
+                    if (DataSender::Sender::SourceRegistry::GetById(sourceId) is null) return false;
 
                     int index = subscriptions.Find(sourceId);
                     if (index >= 0) subscriptions.RemoveAt(uint(index));
+                    return true;
                 }
 
                 Json::Value SubscriptionJson() {
@@ -134,6 +161,22 @@ namespace DataSender {
                     }
                     root["sources"] = sources;
                     return root;
+                }
+
+                Json::Value SubscriptionResultJson(const Json::Value &in accepted, const Json::Value &in rejected) {
+                    Json::Value root = Json::Object();
+                    root["accepted"] = accepted;
+                    root["rejected"] = rejected;
+                    root["subscription"] = SubscriptionJson();
+                    return root;
+                }
+
+                bool IsAllSourceId(const string &in sourceId) {
+                    return sourceId == "*" || sourceId == "all";
+                }
+
+                string NormalizedSubscriptionSourceId(const string &in sourceId) {
+                    return IsAllSourceId(sourceId) ? "all" : sourceId;
                 }
 
                 void HandleCommand(const string &in line) {
@@ -199,23 +242,22 @@ namespace DataSender {
 
                     if (command == "subscribe") {
                         array<string> sourceIds = ReadSourceIds(parsed);
-                        SetSubscriptions(sourceIds);
-                        SendJson(DataSender::Shared::Messages::Ack("subscribe", "subscriptions updated", SubscriptionJson(), Time::Now));
+                        SendJson(DataSender::Shared::Messages::Ack("subscribe", "subscriptions updated", SetSubscriptions(sourceIds), Time::Now));
                         return;
                     }
 
                     if (command == "subscribe_all") {
                         SubscribeAll();
-                        SendJson(DataSender::Shared::Messages::Ack("subscribe_all", "subscribed to all sources", SubscriptionJson(), Time::Now));
+                        Json::Value accepted = Json::Array();
+                        accepted.Add("all");
+                        Json::Value rejected = Json::Array();
+                        SendJson(DataSender::Shared::Messages::Ack("subscribe_all", "subscribed to all sources", SubscriptionResultJson(accepted, rejected), Time::Now));
                         return;
                     }
 
                     if (command == "unsubscribe") {
                         array<string> sourceIds = ReadSourceIds(parsed);
-                        for (uint i = 0; i < sourceIds.Length; i++) {
-                            RemoveSubscription(sourceIds[i]);
-                        }
-                        SendJson(DataSender::Shared::Messages::Ack("unsubscribe", "subscriptions updated", SubscriptionJson(), Time::Now));
+                        SendJson(DataSender::Shared::Messages::Ack("unsubscribe", "subscriptions updated", RemoveSubscriptions(sourceIds), Time::Now));
                         return;
                     }
 

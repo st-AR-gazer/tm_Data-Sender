@@ -73,7 +73,27 @@ List sources:
 Subscribe to specific sources:
 
 ```json
-{"type":"subscribe","sources":["race_data","vehicle_state"]}
+{"type":"subscribe","sources":["race_data","not_a_source"]}
+```
+
+The response reports which source IDs were accepted and which were rejected:
+
+```json
+{
+  "type": "ack",
+  "version": 1,
+  "t": 123456,
+  "command": "subscribe",
+  "message": "subscriptions updated",
+  "data": {
+    "accepted": ["race_data"],
+    "rejected": ["not_a_source"],
+    "subscription": {
+      "all": false,
+      "sources": ["race_data"]
+    }
+  }
+}
 ```
 
 Subscribe to all sources:
@@ -87,6 +107,8 @@ Unsubscribe from specific sources:
 ```json
 {"type":"unsubscribe","sources":["race_data"]}
 ```
+
+`unsubscribe` also reports accepted and rejected source IDs. Accepted means the source ID exists and the command was applied; it does not require that the source was already subscribed.
 
 Unsubscribe from all sources:
 
