@@ -8,6 +8,8 @@ namespace DataSender {
                 uint messagesSent;
                 bool subscribedAll;
                 array<string> subscriptions;
+                array<string> lastSentSourceIds;
+                array<uint> lastSentSourceSeqs;
 
                 ClientSession(Net::Socket@ socket, uint connectedAt) {
                     @this.socket = socket;
@@ -44,6 +46,30 @@ namespace DataSender {
                 bool IsSubscribedTo(const string &in sourceId) {
                     if (subscribedAll) return true;
                     return subscriptions.Find(sourceId) >= 0;
+                }
+
+                uint LastSentSourceSeq(const string &in sourceId) {
+                    int index = lastSentSourceIds.Find(sourceId);
+                    if (index < 0) return 0;
+                    return lastSentSourceSeqs[uint(index)];
+                }
+
+                bool HasSentSourceSeq(const string &in sourceId, uint seq) {
+                    if (sourceId.Length == 0 || seq == 0) return false;
+                    return LastSentSourceSeq(sourceId) >= seq;
+                }
+
+                void MarkSourceSeqSent(const string &in sourceId, uint seq) {
+                    if (sourceId.Length == 0 || seq == 0) return;
+
+                    int index = lastSentSourceIds.Find(sourceId);
+                    if (index < 0) {
+                        lastSentSourceIds.InsertLast(sourceId);
+                        lastSentSourceSeqs.InsertLast(seq);
+                        return;
+                    }
+
+                    lastSentSourceSeqs[uint(index)] = seq;
                 }
 
                 string RemoteIP() {

@@ -229,16 +229,42 @@ namespace DataSender {
 
             bool ShouldSendToClient(ClientSession@ client, const Json::Value &in message) {
                 if (client is null) return false;
-                string sourceId = string(message.Get("source", Json::Value("")));
+                string sourceId = MessageSourceId(message);
                 if (sourceId.Length == 0 || sourceId == "service") return true;
-                return client.IsSubscribedTo(sourceId);
+                if (!client.IsSubscribedTo(sourceId)) return false;
+
+                uint seq = MessageSeq(message);
+                if (client.HasSentSourceSeq(sourceId, seq)) return false;
+                return true;
             }
 
             bool SendToClient(ClientSession@ client, const Json::Value &in message) {
                 if (client is null) return false;
                 bool ok = client.SendJson(message);
-                if (ok) g_totalMessagesSent++;
+                if (ok) {
+                    g_totalMessagesSent++;
+                    MarkSourceMessageSent(client, message);
+                }
                 return ok;
+            }
+
+            void MarkSourceMessageSent(ClientSession@ client, const Json::Value &in message) {
+                if (client is null) return;
+
+                string sourceId = MessageSourceId(message);
+                if (sourceId.Length == 0 || sourceId == "service") return;
+
+                client.MarkSourceSeqSent(sourceId, MessageSeq(message));
+            }
+
+            string MessageSourceId(const Json::Value &in message) {
+                return string(message.Get("source", Json::Value("")));
+            }
+
+            uint MessageSeq(const Json::Value &in message) {
+                int seq = int(message.Get("seq", Json::Value(0)));
+                if (seq <= 0) return 0;
+                return uint(seq);
             }
 
             void CloseClientAt(uint index) {
