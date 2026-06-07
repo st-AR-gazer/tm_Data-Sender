@@ -2,10 +2,15 @@ namespace DataSender {
     namespace Sources {
         namespace RaceData {
             Json::Value MakeSnapshot() {
-                auto rd = MLFeed::GetRaceData_V4();
                 Json::Value root = Json::Object();
+
+#if DEPENDENCY_MLFEEDRACEDATA
+                auto rd = MLFeed::GetRaceData_V4();
                 root["available"] = false;
-                if (rd is null) return root;
+                if (rd is null) {
+                    root["reason"] = "no_race_data";
+                    return root;
+                }
 
                 root["available"] = true;
                 root["map"] = rd.Map;
@@ -31,6 +36,10 @@ namespace DataSender {
                     playersArr.Add(pj);
                 }
                 root["players"] = playersArr;
+#else
+                root["available"] = false;
+                root["reason"] = "mlfeed_race_data_dependency_unavailable";
+#endif
                 return root;
             }
         }

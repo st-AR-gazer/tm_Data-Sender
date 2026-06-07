@@ -155,8 +155,84 @@ Current source IDs:
 | Source | Description |
 | --- | --- |
 | `race_data` | MLFeed race/map/player snapshot. |
+| `player_cp_info` | Full MLFeed player checkpoint/status snapshot. |
 | `vehicle_state` | Local viewed vehicle telemetry. |
 | `camera` | Current render camera and viewed vehicle screen projection. |
+
+Source payloads include an `available` field. If a source exists but cannot
+produce data, it sends `available: false` with a `reason` field instead of an
+empty value.
+
+Common unavailable reasons:
+
+| Source | Reason |
+| --- | --- |
+| `race_data` | `mlfeed_race_data_dependency_unavailable`, `no_race_data` |
+| `player_cp_info` | `mlfeed_race_data_dependency_unavailable`, `no_race_data` |
+| `vehicle_state` | `vehicle_state_dependency_unavailable`, `no_viewing_player_state`, `not_sampled_yet` |
+| `camera` | `camera_dependency_unavailable`, `no_current_camera` |
+
+### Player CP Info Data
+
+The `player_cp_info` source reports the full MLFeed `PlayerCpInfo_V4` surface
+for each player, sorted by race rank:
+
+```json
+{
+  "available": true,
+  "map": "abc123",
+  "gameTime": 123456,
+  "cpCount": 12,
+  "cpsToFinish": 13,
+  "lapCount": 1,
+  "spawnCount": 4,
+  "localPlayer": {
+    "name": "Local Player",
+    "login": "local-login",
+    "wsid": "account-id"
+  },
+  "players": [
+    {
+      "name": "Player",
+      "login": "player-login",
+      "wsid": "account-id",
+      "summary": "PlayerCpInfo(...)",
+      "isLocalPlayer": false,
+      "isMVP": false,
+      "isSpawned": true,
+      "isFinished": false,
+      "spawnStatus": "Spawned",
+      "spawnStatusValue": 2,
+      "spawnIndex": 1,
+      "startTime": 1000,
+      "currentLap": 0,
+      "cpCount": 5,
+      "cpTimes": [0, 8123, 16345],
+      "lastCpTime": 43231,
+      "lastCpOrRespawnTime": 43231,
+      "lastTheoreticalCpTime": 43231,
+      "currentRaceTime": 45000,
+      "currentRaceTimeRaw": 45016,
+      "theoreticalRaceTime": 45000,
+      "bestTime": 55992,
+      "bestRaceTimes": [8123, 16345],
+      "bestLapTimes": [8123, 16345],
+      "nbRespawnsRequested": 0,
+      "lastRespawnCheckpoint": 0,
+      "lastRespawnRaceTime": 0,
+      "timeLostToRespawns": 0,
+      "timeLostToRespawnByCp": [0, 0, 0],
+      "raceRank": 17,
+      "raceRespawnRank": 17,
+      "taRank": 3,
+      "roundPoints": 0,
+      "points": 0,
+      "teamNum": -1,
+      "latencyEstimate": 16.0
+    }
+  ]
+}
+```
 
 ### Camera Data
 
@@ -200,6 +276,7 @@ Telemetry source messages use `type: "snapshot"`.
   "sourceLabel": "Vehicle state",
   "seq": 42,
   "data": {
+    "available": true,
     "spd": 132.5,
     "pos": [10.0, 20.0, 30.0],
     "gear": 4

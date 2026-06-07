@@ -2,17 +2,21 @@ namespace DataSender {
     namespace Sender {
         namespace SourceRegistry {
             enum SourceKind {
-                RaceData, VehicleState, Camera
+                RaceData, PlayerCpInfo, VehicleState, Camera
             }
 
             [Setting hidden name="Enable race data source"]
             bool S_EnableRaceData = true;
+            [Setting hidden name="Enable player CP info source"]
+            bool S_EnablePlayerCpInfo = true;
             [Setting hidden name="Enable vehicle state source"]
             bool S_EnableVehicleState = true;
             [Setting hidden name="Enable camera source"]
             bool S_EnableCamera = false;
             [Setting hidden name="Race data interval" min=1 max=1000]
             uint S_RaceDataIntervalMs = 100;
+            [Setting hidden name="Player CP info interval" min=1 max=1000]
+            uint S_PlayerCpInfoIntervalMs = 100;
             [Setting hidden name="Vehicle state interval" min=1 max=1000]
             uint S_VehicleStateIntervalMs = 16;
             [Setting hidden name="Camera interval" min=1 max=1000]
@@ -63,6 +67,7 @@ namespace DataSender {
                 g_initialized = true;
                 g_sources.RemoveRange(0, g_sources.Length);
                 g_sources.InsertLast(SourceState(SourceKind::RaceData, "race_data", "Race data", S_EnableRaceData, S_RaceDataIntervalMs));
+                g_sources.InsertLast(SourceState(SourceKind::PlayerCpInfo, "player_cp_info", "Player CP info", S_EnablePlayerCpInfo, S_PlayerCpInfoIntervalMs));
                 g_sources.InsertLast(SourceState(SourceKind::VehicleState, "vehicle_state", "Vehicle state", S_EnableVehicleState, S_VehicleStateIntervalMs));
                 g_sources.InsertLast(SourceState(SourceKind::Camera, "camera", "Camera", S_EnableCamera, S_CameraIntervalMs));
                 ApplySettings();
@@ -116,6 +121,8 @@ namespace DataSender {
             bool SetEnabled(const string &in id, bool enabled) {
                 if (id == "race_data") {
                     S_EnableRaceData = enabled;
+                } else if (id == "player_cp_info") {
+                    S_EnablePlayerCpInfo = enabled;
                 } else if (id == "vehicle_state") {
                     S_EnableVehicleState = enabled;
                 } else if (id == "camera") {
@@ -136,6 +143,8 @@ namespace DataSender {
                 intervalMs = ClampInterval(intervalMs);
                 if (id == "race_data") {
                     S_RaceDataIntervalMs = intervalMs;
+                } else if (id == "player_cp_info") {
+                    S_PlayerCpInfoIntervalMs = intervalMs;
                 } else if (id == "vehicle_state") {
                     S_VehicleStateIntervalMs = intervalMs;
                 } else if (id == "camera") {
@@ -227,6 +236,11 @@ namespace DataSender {
                     raceData.enabled = S_EnableRaceData;
                     raceData.intervalMs = ClampInterval(S_RaceDataIntervalMs);
                 }
+                SourceState@ playerCpInfo = GetById("player_cp_info");
+                if (playerCpInfo !is null) {
+                    playerCpInfo.enabled = S_EnablePlayerCpInfo;
+                    playerCpInfo.intervalMs = ClampInterval(S_PlayerCpInfoIntervalMs);
+                }
                 SourceState@ vehicleState = GetById("vehicle_state");
                 if (vehicleState !is null) {
                     vehicleState.enabled = S_EnableVehicleState;
@@ -258,6 +272,9 @@ namespace DataSender {
             Json::Value ReadSource(SourceKind kind, float dt) {
                 if (kind == SourceKind::RaceData) {
                     return DataSender::Sources::RaceData::MakeSnapshot();
+                }
+                if (kind == SourceKind::PlayerCpInfo) {
+                    return DataSender::Sources::PlayerCpInfo::MakeSnapshot();
                 }
                 if (kind == SourceKind::VehicleState) {
                     DataSender::Sources::VehicleStateSource::Update(dt);

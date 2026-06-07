@@ -31,6 +31,7 @@ namespace DataSender {
 
                 Json::Value ToJson() const {
                     Json::Value o = Json::Object();
+                    o["available"] = true;
                     o["t"] = int(t);
                     o["spd"] = spd;
 
@@ -105,12 +106,26 @@ namespace DataSender {
             float g_prevSpeed = 0.0f;
             float g_prevAccel = 0.0f;
             bool g_ready = false;
+            string g_unavailableReason = "not_sampled_yet";
+
+            Json::Value Unavailable(const string &in reason) {
+                Json::Value root = Json::Object();
+                root["available"] = false;
+                root["reason"] = reason;
+                return root;
+            }
 
             void Update(float dt) {
+#if DEPENDENCY_VEHICLESTATE
                 if (dt <= 0) dt = 0.016f;
 
                 CSceneVehicleVisState@ vis = VehicleState::ViewingPlayerState();
-                if (vis is null) return;
+                if (vis is null) {
+                    @g_latest = null;
+                    g_ready = false;
+                    g_unavailableReason = "no_viewing_player_state";
+                    return;
+                }
 
                 Snapshot s;
                 s.t = Time::Now;
@@ -141,6 +156,7 @@ namespace DataSender {
                 s.cruiseSpeed = VehicleState::GetCruiseDisplaySpeed(vis);
                 s.vehicleType = VehicleState::GetVehicleType(vis);
                 bool finished = false;
+#if DEPENDENCY_MLFEEDRACEDATA
                 auto rd = MLFeed::GetRaceData_V4();
                 if (rd !is null) {
                     auto lp = rd.LocalPlayer;
@@ -148,6 +164,7 @@ namespace DataSender {
                         finished = lp.CpCount >= int(rd.CPsToFinish);
                     }
                 }
+#endif
                 s.finished = finished;
                 s.steerAngFL = vis.FLSteerAngle;
                 s.steerAngFR = vis.FRSteerAngle;
@@ -175,12 +192,16 @@ namespace DataSender {
                 s.fallRR = VehicleState::GetWheelFalling(vis, 3);
                 @g_latest = s;
                 g_ready = true;
+#else
+                @g_latest = null;
+                g_ready = false;
+                g_unavailableReason = "vehicle_state_dependency_unavailable";
+#endif
             }
 
             Json::Value GetJson() {
                 if (!g_ready || g_latest is null) {
-                    Json::Value empty;
-                    return empty;
+                    return Unavailable(g_unavailableReason);
                 }
                 return g_latest.ToJson();
             }
