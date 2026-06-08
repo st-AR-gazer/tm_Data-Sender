@@ -438,7 +438,12 @@ namespace DataSender {
                 s.up = vis.Up;
                 s.dir = vis.Dir;
                 s.frontSpeed = vis.FrontSpeed;
+                // side speed sohuld only be accessable in dev mode
+#if SIG_DEVELOPER
                 s.sspd = VehicleState::GetSideSpeed(vis);
+#else
+                s.sspd = 404.0f;
+#endif
                 float speed = vis.WorldVel.Length();
                 s.spd = speed;
                 s.accel = (speed - g_prevSpeed) / dt;

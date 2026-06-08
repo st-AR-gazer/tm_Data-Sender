@@ -170,9 +170,7 @@ Current source IDs:
 | `vehicle_state` | Local viewed vehicle state, including inputs, pose, velocity, reactor/turbo, water/contact, engine, and wheels. |
 | `camera` | Current render camera and viewed vehicle screen projection. |
 
-Source payloads include an `available` field. If a source exists but cannot
-produce data, it sends `available: false` with a `reason` field instead of an
-empty value.
+Source payloads include an `available` field. If a source exists but cannot produce data, it sends `available: false` with a `reason` field instead of an empty value.
 
 If a source throws while being sampled, the sender keeps running and emits a
 source error payload:
@@ -197,12 +195,7 @@ Common unavailable reasons:
 
 ### Race Data
 
-The `race_data` source reports the serializable JSON surface of
-`MLFeed::HookRaceStatsEventsBase_V4`, returned by `MLFeed::GetRaceData_V4()`.
-Sorted player arrays are exported as ordered player references so this source
-stays focused on race/map state. Full `MLFeed::PlayerCpInfo_V4` data lives in
-the `player_cp_info` source. Object handles such as player nod handles are not
-serialized.
+The `race_data` source reports the serializable JSON surface of `MLFeed::HookRaceStatsEventsBase_V4`, returned by `MLFeed::GetRaceData_V4()`. Sorted player arrays are exported as ordered player references so this source stays focused on race/map state. Full `MLFeed::PlayerCpInfo_V4` data lives in the `player_cp_info` source. Object handles such as player nod handles are not serialized.
 
 `players` is a convenience alias for `sortedPlayers.race`.
 
@@ -364,17 +357,15 @@ checkpoint/status snapshot.
 ```
 
 ### Vehicle State Data
+The `vehicle_state` source reports the currently viewed vehicle state from the VehicleState dependency. The top-level shorthand fields are kept for quick clients and smoke captures, while `vehicleState` contains the richer grouped state.
 
-The `vehicle_state` source reports the currently viewed vehicle state from the
-VehicleState dependency. The top-level shorthand fields are kept for quick
-clients and smoke captures, while `vehicleState` contains the richer grouped
-state.
+Side speed is only sampled in developer mode. Outside developer mode, `sspd` and `vehicleState.velocity.sideSpeed` are emitted as `404.0`.
 
 ```json
 {
   "available": true,
   "spd": 72.4,
-  "sspd": -1.2,
+  "sspd": 404.0,
   "frontSpeed": 72.1,
   "pos": [10.0, 20.0, 30.0],
   "worldVel": [72.0, 0.0, 2.0],
@@ -401,7 +392,7 @@ state.
       "speed": 72.4,
       "speedKph": 260.64,
       "frontSpeed": 72.1,
-      "sideSpeed": -1.2,
+      "sideSpeed": 404.0,
       "acceleration": 3.2,
       "jerk": 0.5
     },
