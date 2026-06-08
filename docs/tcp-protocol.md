@@ -366,3 +366,9 @@ The TCP server can rate-limit telemetry per client. When the limit is reached, i
 ## Python Example
 
 See [examples/tcp_client.py](examples/tcp_client.py).
+
+To start the sender service and capture every received TCP message to JSONL:
+
+```powershell
+python docs/examples/tcp_capture_smoke.py --duration 30
+```

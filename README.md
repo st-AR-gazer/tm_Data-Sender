@@ -19,7 +19,13 @@ The current architecture is a local TCP server. External clients connect to the 
 
 - [TCP protocol](docs/tcp-protocol.md)
 - [Python TCP example](docs/examples/tcp_client.py)
-- [Python TCP smoke test](docs/examples/tcp_smoke_test.py)
+- [Python TCP capture smoke](docs/examples/tcp_capture_smoke.py)
+
+Capture a short JSONL dump:
+
+```powershell
+python docs/examples/tcp_capture_smoke.py --duration 30
+```
 
 ## Sources
 
