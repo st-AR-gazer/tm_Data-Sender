@@ -5,7 +5,7 @@ namespace DataSender {
             log(
                 "Loaded " + DataSender::PluginMeta.Name + " v" + DataSender::PluginMeta.Version,
                 LogLevel::Debug,
-                6,
+                5,
                 "DataSender::App::Main"
             );
         }

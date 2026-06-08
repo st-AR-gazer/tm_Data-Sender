@@ -274,8 +274,8 @@ namespace DataSender {
                     log(
                         "Source poll failed for " + source.id + ": " + error,
                         LogLevel::Warning,
-                        264,
-                        "SourceRegistry::Poll"
+                        274,
+                        "DataSender::Sender::SourceRegistry::Poll"
                     );
                 }
                 source.latestData = data;

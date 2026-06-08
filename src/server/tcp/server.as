@@ -112,8 +112,8 @@ namespace DataSender {
                     log(
                         g_lastError,
                         LogLevel::Warning,
-                        67,
-                        "Tcp::Start"
+                        112,
+                        "DataSender::Server::Tcp::Start"
                     );
                     return false;
                 }
@@ -127,8 +127,8 @@ namespace DataSender {
                 log(
                     "TCP server listening on " + g_boundHost + ":" + tostring(g_boundPort),
                     LogLevel::Info,
-                    80,
-                    "Tcp::Start"
+                    127,
+                    "DataSender::Server::Tcp::Start"
                 );
                 return true;
             }
@@ -147,8 +147,8 @@ namespace DataSender {
                     log(
                         "TCP server stopped",
                         LogLevel::Info,
-                        94,
-                        "Tcp::Stop"
+                        147,
+                        "DataSender::Server::Tcp::Stop"
                     );
                 }
                 g_running = false;
@@ -231,8 +231,8 @@ namespace DataSender {
                     log(
                         "TCP client connected",
                         LogLevel::Info,
-                        152,
-                        "Tcp::AcceptClients"
+                        231,
+                        "DataSender::Server::Tcp::AcceptClients"
                     );
                 }
             }
@@ -372,8 +372,8 @@ namespace DataSender {
                 log(
                     g_lastError,
                     LogLevel::Warning,
-                    line,
-                    fn
+                    372,
+                    "DataSender::Server::Tcp::RecordError"
                 );
             }
         }

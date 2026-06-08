@@ -31,7 +31,7 @@ namespace DataSender {
                 g_lastError = "";
                 DataSender::Sender::SourceRegistry::ResetScheduling(g_startedAt);
                 DataSender::Server::Tcp::EnsureRunning();
-                log("Service started", LogLevel::Info, 46, "Service::Start");
+                log("Service started", LogLevel::Info, 34, "DataSender::Sender::Service::Start");
             }
 
             void Stop() {
@@ -39,7 +39,7 @@ namespace DataSender {
 
                 g_running = false;
                 g_stoppedAt = Time::Now;
-                log("Service stopped", LogLevel::Info, 57, "Service::Stop");
+                log("Service stopped", LogLevel::Info, 42, "DataSender::Sender::Service::Stop");
             }
 
             void Shutdown() {
@@ -87,7 +87,7 @@ namespace DataSender {
                     g_updateErrors++;
                     g_lastError = DataSender::Toolkit::Truncate(getExceptionInfo(), 512);
                     if (g_lastError.Length == 0) g_lastError = "unknown service update exception";
-                    log("Service update failed: " + g_lastError, LogLevel::Warning, 88, "Service::Update");
+                    log("Service update failed: " + g_lastError, LogLevel::Warning, 90, "DataSender::Sender::Service::Update");
                 }
             }
 
