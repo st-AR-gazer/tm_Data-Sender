@@ -9,6 +9,9 @@ namespace DataSender {
                 uint64 lastSentAt;
                 uint64 messagesSent;
                 uint64 commandErrors;
+                uint64 telemetryDropped;
+                int64 telemetryWindowStamp;
+                uint telemetryMessagesThisWindow;
                 bool subscribedAll;
                 array<string> subscriptions;
                 array<string> lastSentSourceIds;
@@ -23,6 +26,9 @@ namespace DataSender {
                     this.lastSentAt = 0;
                     this.messagesSent = 0;
                     this.commandErrors = 0;
+                    this.telemetryDropped = 0;
+                    this.telemetryWindowStamp = 0;
+                    this.telemetryMessagesThisWindow = 0;
                     this.subscribedAll = false;
                 }
 
@@ -93,6 +99,25 @@ namespace DataSender {
                         lastSentAt = Time::Now;
                     }
                     return ok;
+                }
+
+                bool TryConsumeTelemetrySlot() {
+                    uint maxPerSecond = MaxTelemetryMessagesPerSecond();
+                    if (maxPerSecond == 0) return true;
+
+                    int64 stamp = Time::Stamp;
+                    if (stamp != telemetryWindowStamp) {
+                        telemetryWindowStamp = stamp;
+                        telemetryMessagesThisWindow = 0;
+                    }
+
+                    if (telemetryMessagesThisWindow >= maxPerSecond) {
+                        telemetryDropped++;
+                        return false;
+                    }
+
+                    telemetryMessagesThisWindow++;
+                    return true;
                 }
 
                 bool HasSubscriptions() {

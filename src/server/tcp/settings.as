@@ -7,6 +7,7 @@ namespace DataSender {
             const uint ACCEPTS_PER_UPDATE = 8;
             const uint MAX_COMMAND_ERRORS = 16;
             const uint MAX_SOURCE_IDS_PER_COMMAND = 32;
+
             [Setting hidden name="Enable TCP server"]
             bool S_Enabled = true;
             [Setting hidden name="TCP host"]
@@ -15,6 +16,8 @@ namespace DataSender {
             int S_Port = DEFAULT_PORT;
             [Setting hidden name="TCP broadcast interval" min=0 max=1000]
             uint S_BroadcastIntervalMs = 100;
+            [Setting hidden name="TCP max telemetry messages per second" min=0 max=2000]
+            int S_MaxTelemetryMessagesPerSecond = 120;
             [Setting hidden name="TCP max clients" min=1 max=64]
             int S_MaxClients = 8;
             [Setting hidden name="Allow TCP control commands"]
@@ -58,6 +61,11 @@ namespace DataSender {
             uint MaxClients() {
                 S_MaxClients = Math::Clamp(S_MaxClients, 1, 64);
                 return uint(S_MaxClients);
+            }
+
+            uint MaxTelemetryMessagesPerSecond() {
+                S_MaxTelemetryMessagesPerSecond = Math::Clamp(S_MaxTelemetryMessagesPerSecond, 0, 2000);
+                return uint(S_MaxTelemetryMessagesPerSecond);
             }
 
             uint MaxCommandBytes() {

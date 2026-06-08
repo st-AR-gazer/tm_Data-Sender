@@ -13,6 +13,7 @@ namespace DataSender {
             uint64 g_totalRejected = 0;
             uint64 g_totalDisconnected = 0;
             uint64 g_totalMessagesSent = 0;
+            uint64 g_totalTelemetryDropped = 0;
             uint64 g_updateErrors = 0;
 
             bool IsRunning() {
@@ -50,6 +51,10 @@ namespace DataSender {
 
             uint64 TotalMessagesSent() {
                 return g_totalMessagesSent;
+            }
+
+            uint64 TotalTelemetryDropped() {
+                return g_totalTelemetryDropped;
             }
 
             uint64 UpdateErrors() {
@@ -191,6 +196,8 @@ namespace DataSender {
                 root["totalRejected"] = DataSender::Toolkit::JsonCounter(g_totalRejected);
                 root["totalDisconnected"] = DataSender::Toolkit::JsonCounter(g_totalDisconnected);
                 root["messagesSent"] = DataSender::Toolkit::JsonCounter(g_totalMessagesSent);
+                root["telemetryDropped"] = DataSender::Toolkit::JsonCounter(g_totalTelemetryDropped);
+                root["maxTelemetryMessagesPerSecond"] = int(MaxTelemetryMessagesPerSecond());
                 root["updateErrors"] = DataSender::Toolkit::JsonCounter(g_updateErrors);
                 root["lastError"] = g_lastError;
                 return root;
@@ -245,7 +252,7 @@ namespace DataSender {
             }
 
             void BroadcastTelemetry() {
-                Broadcast(DataSender::Sender::Service::StatusMessage());
+                BroadcastTelemetryMessage(DataSender::Sender::Service::StatusMessage());
                 Json::Value messages = DataSender::Sender::Service::LatestSourceMessages();
 
                 for (uint i = 0; i < messages.Length; i++) {
@@ -253,10 +260,10 @@ namespace DataSender {
                 }
             }
 
-            void Broadcast(const Json::Value &in message) {
+            void BroadcastTelemetryMessage(const Json::Value &in message) {
                 for (int i = int(g_clients.Length) - 1; i >= 0; i--) {
                     ClientSession@ client = g_clients[uint(i)];
-                    if (!SendToClient(client, message)) {
+                    if (!SendTelemetryToClient(client, message)) {
                         CloseClientAt(uint(i));
                     }
                 }
@@ -266,7 +273,7 @@ namespace DataSender {
                 Json::Value messages = DataSender::Sender::Service::LatestSourceMessages();
                 for (uint i = 0; i < messages.Length; i++) {
                     if (!ShouldSendToClient(client, messages[i])) continue;
-                    if (!SendToClient(client, messages[i])) return;
+                    if (!SendTelemetryToClient(client, messages[i])) return;
                 }
             }
 
@@ -275,7 +282,7 @@ namespace DataSender {
                     ClientSession@ client = g_clients[uint(i)];
                     if (!ShouldSendToClient(client, message)) continue;
 
-                    if (!SendToClient(client, message)) {
+                    if (!SendTelemetryToClient(client, message)) {
                         CloseClientAt(uint(i));
                     }
                 }
@@ -290,6 +297,15 @@ namespace DataSender {
                 uint64 seq = MessageSeq(message);
                 if (client.HasSentSourceSeq(sourceId, seq)) return false;
                 return true;
+            }
+
+            bool SendTelemetryToClient(ClientSession@ client, const Json::Value &in message) {
+                if (client is null) return false;
+                if (!client.TryConsumeTelemetrySlot()) {
+                    g_totalTelemetryDropped++;
+                    return true;
+                }
+                return SendToClient(client, message);
             }
 
             bool SendToClient(ClientSession@ client, const Json::Value &in message) {

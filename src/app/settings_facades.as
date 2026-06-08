@@ -27,6 +27,7 @@ namespace DataSender {
                 UI::Text("Address: " + DataSender::Server::Tcp::AddressText());
                 UI::Text("Clients: " + tostring(DataSender::Server::Tcp::ClientCount()) + " / " + tostring(DataSender::Server::Tcp::MaxClients()));
                 UI::Text("Messages sent: " + tostring(DataSender::Server::Tcp::TotalMessagesSent()));
+                UI::Text("Telemetry coalesced: " + tostring(DataSender::Server::Tcp::TotalTelemetryDropped()));
                 UI::Text("Accepted: " + tostring(DataSender::Server::Tcp::TotalAccepted()) + " | Rejected: " + tostring(DataSender::Server::Tcp::TotalRejected()) + " | Disconnected: " + tostring(DataSender::Server::Tcp::TotalDisconnected()));
                 if (DataSender::Server::Tcp::UpdateErrors() > 0) {
                     UI::Text("TCP errors: " + ErrorText(tostring(DataSender::Server::Tcp::UpdateErrors())));
@@ -65,6 +66,11 @@ namespace DataSender {
                 tcpBroadcastInterval = UI::SliderInt("TCP broadcast interval (ms)", tcpBroadcastInterval, 0, 1000);
                 DataSender::Server::Tcp::S_BroadcastIntervalMs = uint(Math::Clamp(tcpBroadcastInterval, 0, 1000));
                 UI::TextDisabled("0 ms broadcasts every service update.");
+                int maxTelemetryPerSecond = DataSender::Server::Tcp::S_MaxTelemetryMessagesPerSecond;
+                UI::SetNextItemWidth(180.0f);
+                maxTelemetryPerSecond = UI::SliderInt("TCP max telemetry msgs/s", maxTelemetryPerSecond, 0, 2000);
+                DataSender::Server::Tcp::S_MaxTelemetryMessagesPerSecond = Math::Clamp(maxTelemetryPerSecond, 0, 2000);
+                UI::TextDisabled("0 disables telemetry rate limiting.");
 
                 int tcpMaxClients = DataSender::Server::Tcp::S_MaxClients;
                 UI::SetNextItemWidth(180.0f);
@@ -158,12 +164,13 @@ namespace DataSender {
                 return;
             }
 
-            if (!UI::BeginTable("##data-sender-clients-" + idPrefix, 6, StandardTableFlags())) return;
+            if (!UI::BeginTable("##data-sender-clients-" + idPrefix, 7, StandardTableFlags())) return;
 
             UI::TableSetupColumn("#", UI::TableColumnFlags::WidthFixed, 36.0f);
             UI::TableSetupColumn("Remote");
             UI::TableSetupColumn("Connected", UI::TableColumnFlags::WidthFixed, 110.0f);
             UI::TableSetupColumn("Messages", UI::TableColumnFlags::WidthFixed, 84.0f);
+            UI::TableSetupColumn("Coalesced", UI::TableColumnFlags::WidthFixed, 86.0f);
             UI::TableSetupColumn("Subscriptions");
             UI::TableSetupColumn("Action", UI::TableColumnFlags::WidthFixed, 82.0f);
             UI::TableHeadersRow();
@@ -181,6 +188,8 @@ namespace DataSender {
                 UI::Text(AgeText(client.connectedAt));
                 UI::TableNextColumn();
                 UI::Text(tostring(client.messagesSent));
+                UI::TableNextColumn();
+                UI::Text(tostring(client.telemetryDropped));
                 UI::TableNextColumn();
                 UI::Text(client.SubscriptionText());
                 UI::TableNextColumn();

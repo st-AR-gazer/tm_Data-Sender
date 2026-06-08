@@ -309,6 +309,8 @@ Telemetry source messages use `type: "snapshot"`.
 
 `seq` is per source. Clients only receive a source snapshot when that source has a newer `seq` than the client has already seen.
 
+The TCP server can rate-limit telemetry per client. When the limit is reached, it skips older telemetry messages and sends the latest source snapshot once there is capacity again. Clients should treat `seq` as monotonic, not gap-free.
+
 ### Service Status
 
 ```json
@@ -320,7 +322,12 @@ Telemetry source messages use `type: "snapshot"`.
   "data": {
     "running": true,
     "clients": 1,
-    "sourceSamples": 120
+    "sourceSamples": 120,
+    "tcp": {
+      "messagesSent": 240,
+      "telemetryDropped": 12,
+      "maxTelemetryMessagesPerSecond": 120
+    }
   }
 }
 ```
