@@ -303,10 +303,10 @@ namespace DataSender {
 
             Json::Value ReadSource(SourceKind kind, float dt) {
                 if (kind == SourceKind::RaceData) {
-                    return DataSender::Sources::RaceData::MakeSnapshot();
+                    return DataSender::Sources::MLFeedRaceDataSource::MakeSnapshot();
                 }
                 if (kind == SourceKind::PlayerCpInfo) {
-                    return DataSender::Sources::PlayerCpInfo::MakeSnapshot();
+                    return DataSender::Sources::MLFeedCpInfoSource::MakeSnapshot();
                 }
                 if (kind == SourceKind::VehicleState) {
                     DataSender::Sources::VehicleStateSource::Update(dt);

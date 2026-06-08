@@ -31,9 +31,9 @@ python docs/examples/tcp_capture_smoke.py --duration 30
 
 Current source IDs:
 
-- `race_data`: MLFeed race/map/player snapshot
-- `player_cp_info`: full MLFeed player checkpoint/status snapshot
-- `vehicle_state`: local viewed vehicle telemetry
+- `race_data`: `MLFeed::GetRaceData_V4()` race/map state
+- `player_cp_info`: full `MLFeed::PlayerCpInfo_V4` checkpoint/status snapshot
+- `vehicle_state`: local viewed vehicle state, including inputs, pose, velocity, engine/reactor state, and wheels
 - `camera`: current render camera and viewed vehicle screen projection
 
 Sources backed by optional dependencies report `available: false` with a reason
