@@ -7,6 +7,7 @@ namespace DataSender {
             const uint ACCEPTS_PER_UPDATE = 8;
             const uint MAX_COMMAND_ERRORS = 16;
             const uint MAX_SOURCE_IDS_PER_COMMAND = 32;
+            const uint MAX_FIELD_PATHS_PER_SOURCE = 128;
 
             [Setting hidden name="Enable TCP server"]
             bool S_Enabled = true;
@@ -97,6 +98,10 @@ namespace DataSender {
 
             uint MaxSourceIdsPerCommand() {
                 return MAX_SOURCE_IDS_PER_COMMAND;
+            }
+
+            uint MaxFieldPathsPerSource() {
+                return MAX_FIELD_PATHS_PER_SOURCE;
             }
         }
     }

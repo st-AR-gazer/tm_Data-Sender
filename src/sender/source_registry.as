@@ -21,6 +21,8 @@ namespace DataSender {
             uint S_VehicleStateIntervalMs = 16;
             [Setting hidden name="Camera interval" min=1 max=1000]
             uint S_CameraIntervalMs = 100;
+            [Setting hidden name="Sample camera during render"]
+            bool S_CameraSampleInRender = true;
 
             class SourceState {
                 SourceKind kind;
@@ -62,16 +64,24 @@ namespace DataSender {
 
             bool g_initialized = false;
             array<SourceState@> g_sources;
+            SourceState@ g_raceDataSource;
+            SourceState@ g_playerCpInfoSource;
+            SourceState@ g_vehicleStateSource;
+            SourceState@ g_cameraSource;
 
             void Initialize() {
                 if (g_initialized) return;
 
                 g_initialized = true;
                 g_sources.RemoveRange(0, g_sources.Length);
-                g_sources.InsertLast(SourceState(SourceKind::RaceData, "race_data", "Race data", S_EnableRaceData, S_RaceDataIntervalMs));
-                g_sources.InsertLast(SourceState(SourceKind::PlayerCpInfo, "player_cp_info", "Player CP info", S_EnablePlayerCpInfo, S_PlayerCpInfoIntervalMs));
-                g_sources.InsertLast(SourceState(SourceKind::VehicleState, "vehicle_state", "Vehicle state", S_EnableVehicleState, S_VehicleStateIntervalMs));
-                g_sources.InsertLast(SourceState(SourceKind::Camera, "camera", "Camera", S_EnableCamera, S_CameraIntervalMs));
+                @g_raceDataSource = SourceState(SourceKind::RaceData, "race_data", "Race data", S_EnableRaceData, S_RaceDataIntervalMs);
+                @g_playerCpInfoSource = SourceState(SourceKind::PlayerCpInfo, "player_cp_info", "Player CP info", S_EnablePlayerCpInfo, S_PlayerCpInfoIntervalMs);
+                @g_vehicleStateSource = SourceState(SourceKind::VehicleState, "vehicle_state", "Vehicle state", S_EnableVehicleState, S_VehicleStateIntervalMs);
+                @g_cameraSource = SourceState(SourceKind::Camera, "camera", "Camera", S_EnableCamera, S_CameraIntervalMs);
+                g_sources.InsertLast(g_raceDataSource);
+                g_sources.InsertLast(g_playerCpInfoSource);
+                g_sources.InsertLast(g_vehicleStateSource);
+                g_sources.InsertLast(g_cameraSource);
                 ApplySettings();
                 ResetScheduling(Time::Now);
             }
@@ -90,10 +100,27 @@ namespace DataSender {
                 for (uint i = 0; i < g_sources.Length; i++) {
                     SourceState@ source = g_sources[i];
                     if (!source.enabled) continue;
+                    if (source.kind == SourceKind::Camera && S_CameraSampleInRender) continue;
                     if (now < source.nextSampleAt) continue;
+                    if (!DataSender::Server::Tcp::HasTelemetryDemandForSource(source.id)) continue;
 
                     Poll(source, dt, now);
                 }
+            }
+
+            void Render() {
+                Initialize();
+                if (!S_CameraSampleInRender) return;
+                if (DataSender::Server::Tcp::ClientCount() == 0) return;
+
+                SourceState@ camera = g_cameraSource;
+                if (camera is null) return;
+                if (!camera.enabled) return;
+
+                uint64 now = Time::Now;
+                if (now < camera.nextSampleAt) return;
+                if (!DataSender::Server::Tcp::HasTelemetryDemandForSource(camera.id)) return;
+                Poll(camera, 0.0, now);
             }
 
             uint Count() {
@@ -216,6 +243,7 @@ namespace DataSender {
                 item["id"] = source.id;
                 item["label"] = source.label;
                 item["enabled"] = source.enabled;
+                item["requested"] = DataSender::Server::Tcp::HasTelemetryDemandForSource(source.id);
                 item["intervalMs"] = int(source.intervalMs);
                 item["samples"] = DataSender::Toolkit::JsonCounter(source.samples);
                 item["errors"] = DataSender::Toolkit::JsonCounter(source.errors);
@@ -236,25 +264,21 @@ namespace DataSender {
             }
 
             void ApplySettings() {
-                SourceState@ raceData = GetById("race_data");
-                if (raceData !is null) {
-                    raceData.enabled = S_EnableRaceData;
-                    raceData.intervalMs = ClampInterval(S_RaceDataIntervalMs);
+                if (g_raceDataSource !is null) {
+                    g_raceDataSource.enabled = S_EnableRaceData;
+                    g_raceDataSource.intervalMs = ClampInterval(S_RaceDataIntervalMs);
                 }
-                SourceState@ playerCpInfo = GetById("player_cp_info");
-                if (playerCpInfo !is null) {
-                    playerCpInfo.enabled = S_EnablePlayerCpInfo;
-                    playerCpInfo.intervalMs = ClampInterval(S_PlayerCpInfoIntervalMs);
+                if (g_playerCpInfoSource !is null) {
+                    g_playerCpInfoSource.enabled = S_EnablePlayerCpInfo;
+                    g_playerCpInfoSource.intervalMs = ClampInterval(S_PlayerCpInfoIntervalMs);
                 }
-                SourceState@ vehicleState = GetById("vehicle_state");
-                if (vehicleState !is null) {
-                    vehicleState.enabled = S_EnableVehicleState;
-                    vehicleState.intervalMs = ClampInterval(S_VehicleStateIntervalMs);
+                if (g_vehicleStateSource !is null) {
+                    g_vehicleStateSource.enabled = S_EnableVehicleState;
+                    g_vehicleStateSource.intervalMs = ClampInterval(S_VehicleStateIntervalMs);
                 }
-                SourceState@ camera = GetById("camera");
-                if (camera !is null) {
-                    camera.enabled = S_EnableCamera;
-                    camera.intervalMs = ClampInterval(S_CameraIntervalMs);
+                if (g_cameraSource !is null) {
+                    g_cameraSource.enabled = S_EnableCamera;
+                    g_cameraSource.intervalMs = ClampInterval(S_CameraIntervalMs);
                 }
             }
 

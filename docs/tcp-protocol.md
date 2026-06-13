@@ -9,7 +9,7 @@ Default address:
 
 ## Common Flow
 
-Clients start subscribed to no telemetry sources. After connecting, send the subscription request for the source data you want:
+Clients start subscribed to all telemetry sources. If you only want a subset, send the subscription request for the source data you care about:
 
 ```json
 {"type":"subscribe","sources":["vehicle_state"]}
@@ -17,7 +17,23 @@ Clients start subscribed to no telemetry sources. After connecting, send the sub
 
 The server acknowledges the subscription and immediately sends the latest matching source snapshots it already has.
 
-Enable and configure vehicle state if needed:
+Clients receive full source payloads by default. To reduce per-message payload size, request exact data fields for a source. Field paths are relative to the snapshot `data` object:
+
+```json
+{
+  "type": "client.set_fields",
+  "source": "camera",
+  "fields": [
+    "available",
+    "camera.position",
+    "projection.viewProjectionMatrix",
+    "projection.displayPos",
+    "projection.displayProjectedSize"
+  ]
+}
+```
+
+Enable and configure vehicle state data flow if needed:
 
 ```json
 {"type":"source.set_enabled","source":"vehicle_state","enabled":true}
@@ -99,6 +115,68 @@ Set one source interval:
 
 Intervals are clamped to `1..1000` ms.
 
+Enabled sources are sampled only while at least one connected client is subscribed to them. Source status includes `requested` to show whether any live client currently wants that source.
+
+### TCP Server Commands
+
+Set how often the TCP server broadcasts the latest telemetry messages:
+
+```json
+{"type":"tcp.set_broadcast_interval","intervalMs":16}
+```
+
+The broadcast interval is clamped to `0..1000` ms. `0` broadcasts every plugin update.
+
+Set the per-client telemetry send budget:
+
+```json
+{"type":"tcp.set_max_telemetry_messages_per_second","messagesPerSecond":300}
+```
+
+The message budget is clamped to `0..2000` messages per second. `0` disables the limit.
+
+### Client Commands
+
+Disable repeated service-status telemetry for the current TCP connection:
+
+```json
+{"type":"client.set_service_status_telemetry","enabled":false}
+```
+
+Explicit `service.status` commands still return a status message. This only controls the automatic service-status message sent during telemetry broadcasts.
+
+Limit snapshot payloads for this TCP connection to exact source fields:
+
+```json
+{
+  "type": "client.set_fields",
+  "source": "camera",
+  "fields": [
+    "available",
+    "camera.position",
+    "projection.viewProjectionMatrix",
+    "projection.displaySize"
+  ]
+}
+```
+
+Aliases: `source.set_fields`, `fields.set`.
+
+Field paths are relative to `snapshot.data`. The TCP envelope fields such as `type`, `version`, `t`, `source`, `sourceLabel`, and `seq` are always included. Missing field paths are ignored. Requesting `"all"` or `"*"` clears the field filter for that source and returns the full source payload again:
+
+```json
+{"type":"client.set_fields","source":"camera","fields":["all"]}
+```
+
+Clear field filters without changing source subscriptions:
+
+```json
+{"type":"client.clear_fields","source":"camera"}
+{"type":"client.clear_fields","source":"all"}
+```
+
+Aliases: `source.clear_fields`, `fields.clear`.
+
 List sources:
 
 ```json
@@ -108,6 +186,8 @@ List sources:
 ```
 
 ### Subscription Commands
+
+New clients start subscribed to all sources. Use `subscribe` when a client wants to replace that default with an explicit source list.
 
 Subscribe to specific sources:
 
@@ -168,7 +248,7 @@ Current source IDs:
 | `race_data` | `MLFeed::GetRaceData_V4()` race/map state. |
 | `player_cp_info` | Full `MLFeed::PlayerCpInfo_V4` checkpoint/status snapshot. |
 | `vehicle_state` | Local viewed vehicle state, including inputs, pose, velocity, reactor/turbo, water/contact, engine, and wheels. |
-| `camera` | Current render camera and viewed vehicle screen projection. |
+| `camera` | Current render-phase camera and viewed vehicle screen projection. |
 
 Source payloads include an `available` field. If a source exists but cannot produce data, it sends `available: false` with a `reason` field instead of an empty value.
 
@@ -421,8 +501,7 @@ Side speed is only sampled in developer mode. Outside developer mode, `sspd` and
 
 ### Camera Data
 
-The `camera` source reports the current render camera when the Camera dependency
-is available:
+The `camera` source reports the current render-phase camera when the Camera dependency is available. Camera sampling runs from Openplanet `Render()` when the service is running and at least one client requests camera data:
 
 ```json
 {
@@ -488,12 +567,42 @@ is available:
     "isInsideWater": 0
   },
   "projection": {
-    "cameraMatrix": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [10, 20, 30, 1]],
-    "viewMatrix": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [-10, -20, -30, 1]],
-    "projectionMatrix": [[0.5625, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1.00002, -1], [0, 0, -0.200002, 0]],
-    "viewProjectionMatrix": [[0.5625, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1.00002, -1], [-5.625, -20, 29.8006, 30]],
-    "cameraPluginProjectionMatrix": [[0.5625, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1.00002, -1], [-5.625, -20, 29.8006, 30]],
-    "nextCameraMatrix": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [10, 20, 30, 1]],
+    "cameraMatrix": [
+      [1, 0, 0, 0], 
+      [0, 1, 0, 0], 
+      [0, 0, 1, 0], 
+      [10, 20, 30, 1]
+    ],
+    "viewMatrix": [
+      [1, 0, 0, 0], 
+      [0, 1, 0, 0], 
+      [0, 0, 1, 0], 
+      [-10, -20, -30, 1]
+    ],
+    "projectionMatrix": [
+      [0.5625, 0, 0, 0], 
+      [0, 1, 0, 0], 
+      [0, 0, -1.00002, -1], 
+      [0, 0, -0.200002, 0]
+    ],
+    "viewProjectionMatrix": [
+      [0.5625, 0, 0, 0], 
+      [0, 1, 0, 0], 
+      [0, 0, -1.00002, -1], 
+      [-5.625, -20, 29.8006, 30]
+    ],
+    "cameraPluginProjectionMatrix": [
+      [0.5625, 0, 0, 0], 
+      [0, 1, 0, 0], 
+      [0, 0, -1.00002, -1], 
+      [-5.625, -20, 29.8006, 30]
+    ],
+    "nextCameraMatrix": [
+      [1, 0, 0, 0], 
+      [0, 1, 0, 0], 
+      [0, 0, 1, 0], 
+      [10, 20, 30, 1]
+    ],
     "displaySize": [1920.0, 1080.0],
     "displayPos": [0.0, 0.0],
     "displayProjectedSize": [1920.0, 1080.0],
@@ -509,16 +618,6 @@ is available:
     "behindCamera": false
   }
 }
-```
-
-Matrices are encoded as four column vectors. `projection.viewProjectionMatrix`
-is the matrix used by the Camera dependency's `ToScreen` implementation.
-External clients can project a world point with:
-
-```text
-clip = viewProjectionMatrix * [x, y, z, 1]
-screen = displayPos + ((clip.xy / clip.w + 1) / 2) * displayProjectedSize
-behindCamera = clip.w > 0
 ```
 
 If no render camera is available, `available` is `false` with a `reason` field.
@@ -565,6 +664,7 @@ The TCP server can rate-limit telemetry per client. When the limit is reached, i
     "tcp": {
       "messagesSent": 240,
       "telemetryDropped": 12,
+      "broadcastIntervalMs": 16,
       "maxTelemetryMessagesPerSecond": 120
     }
   }

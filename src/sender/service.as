@@ -91,6 +91,17 @@ namespace DataSender {
                 }
             }
 
+            void Render() {
+                try {
+                    RenderInner();
+                } catch {
+                    g_updateErrors++;
+                    g_lastError = DataSender::Toolkit::Truncate(getExceptionInfo(), 512);
+                    if (g_lastError.Length == 0) g_lastError = "unknown service render exception";
+                    log("Service render failed: " + g_lastError, LogLevel::Warning, 102, "DataSender::Sender::Service::Render");
+                }
+            }
+
             void UpdateInner(float dt) {
                 if (!g_initialized) Initialize();
 
@@ -99,6 +110,13 @@ namespace DataSender {
                     DataSender::Sender::SourceRegistry::Update(dt);
                 }
                 DataSender::Server::Tcp::Update(dt);
+            }
+
+            void RenderInner() {
+                if (!g_initialized) Initialize();
+                if (!g_running) return;
+
+                DataSender::Sender::SourceRegistry::Render();
             }
 
             Json::Value StatusJson() {

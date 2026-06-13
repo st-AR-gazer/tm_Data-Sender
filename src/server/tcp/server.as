@@ -61,6 +61,16 @@ namespace DataSender {
                 return g_updateErrors;
             }
 
+            bool HasTelemetryDemandForSource(const string &in sourceId) {
+                uint64 now = Time::Now;
+                for (uint i = 0; i < g_clients.Length; i++) {
+                    ClientSession@ client = g_clients[i];
+                    if (client is null || !client.IsAlive(now)) continue;
+                    if (client.IsSubscribedTo(sourceId)) return true;
+                }
+                return false;
+            }
+
             ClientSession@ GetClient(uint index) {
                 if (index >= g_clients.Length) return null;
                 return g_clients[index];
@@ -197,6 +207,7 @@ namespace DataSender {
                 root["totalDisconnected"] = DataSender::Toolkit::JsonCounter(g_totalDisconnected);
                 root["messagesSent"] = DataSender::Toolkit::JsonCounter(g_totalMessagesSent);
                 root["telemetryDropped"] = DataSender::Toolkit::JsonCounter(g_totalTelemetryDropped);
+                root["broadcastIntervalMs"] = int(BroadcastIntervalMs());
                 root["maxTelemetryMessagesPerSecond"] = int(MaxTelemetryMessagesPerSecond());
                 root["updateErrors"] = DataSender::Toolkit::JsonCounter(g_updateErrors);
                 root["lastError"] = g_lastError;
@@ -263,6 +274,8 @@ namespace DataSender {
             void BroadcastTelemetryMessage(const Json::Value &in message) {
                 for (int i = int(g_clients.Length) - 1; i >= 0; i--) {
                     ClientSession@ client = g_clients[uint(i)];
+                    if (!ShouldSendToClient(client, message)) continue;
+
                     if (!SendTelemetryToClient(client, message)) {
                         CloseClientAt(uint(i));
                     }
@@ -274,6 +287,16 @@ namespace DataSender {
                 for (uint i = 0; i < messages.Length; i++) {
                     if (!ShouldSendToClient(client, messages[i])) continue;
                     if (!SendTelemetryToClient(client, messages[i])) return;
+                }
+            }
+
+            void SendLatestMessageForSource(ClientSession@ client, const string &in sourceId) {
+                Json::Value messages = DataSender::Sender::Service::LatestSourceMessages();
+                for (uint i = 0; i < messages.Length; i++) {
+                    if (MessageSourceId(messages[i]) != sourceId) continue;
+                    if (!ShouldSendToClient(client, messages[i])) return;
+                    SendTelemetryToClient(client, messages[i]);
+                    return;
                 }
             }
 
@@ -291,7 +314,8 @@ namespace DataSender {
             bool ShouldSendToClient(ClientSession@ client, const Json::Value &in message) {
                 if (client is null) return false;
                 string sourceId = MessageSourceId(message);
-                if (sourceId.Length == 0 || sourceId == "service") return true;
+                if (sourceId.Length == 0) return true;
+                if (sourceId == "service") return client.serviceStatusTelemetryEnabled;
                 if (!client.IsSubscribedTo(sourceId)) return false;
 
                 uint64 seq = MessageSeq(message);
@@ -310,7 +334,8 @@ namespace DataSender {
 
             bool SendToClient(ClientSession@ client, const Json::Value &in message) {
                 if (client is null) return false;
-                bool ok = client.SendJson(message);
+                Json::Value outbound = client.OutboundMessage(message);
+                bool ok = client.SendJson(outbound);
                 if (ok) {
                     g_totalMessagesSent++;
                     MarkSourceMessageSent(client, message);
