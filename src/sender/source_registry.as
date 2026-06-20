@@ -340,7 +340,7 @@ namespace DataSender {
                     log(
                         "Source poll failed for " + source.id + ": " + error,
                         LogLevel::Warning,
-                        274,
+                        340,
                         "DataSender::Sender::SourceRegistry::Poll"
                     );
                 }

@@ -47,7 +47,7 @@ namespace DataSender {
                 log(
                     "Service stopped",
                     LogLevel::Info,
-                    42,
+                    47,
                     "DataSender::Sender::Service::Stop"
                 );
             }
@@ -100,7 +100,7 @@ namespace DataSender {
                     log(
                         "Service update failed: " + g_lastError,
                         LogLevel::Warning,
-                        90,
+                        100,
                         "DataSender::Sender::Service::Update"
                     );
                 }
@@ -116,7 +116,7 @@ namespace DataSender {
                     log(
                         "Service render failed: " + g_lastError,
                         LogLevel::Warning,
-                        102,
+                        116,
                         "DataSender::Sender::Service::Render"
                     );
                 }
