@@ -619,6 +619,8 @@ namespace DataSender {
                     }
 
                     if (command == "subscribe") {
+                        if (!EnsureArrayField(parsed, "sources", "invalid_sources", "Command requires sources to be an array")) return;
+
                         array<string> sourceIds = ReadSourceIds(parsed);
                         Json::Value result = SetSubscriptions(sourceIds);
                         if (SendJson(DataSender::Shared::Messages::Ack("subscribe", "subscriptions updated", result, Time::Now))) {
@@ -639,6 +641,8 @@ namespace DataSender {
                     }
 
                     if (command == "unsubscribe") {
+                        if (!EnsureArrayField(parsed, "sources", "invalid_sources", "Command requires sources to be an array")) return;
+
                         array<string> sourceIds = ReadSourceIds(parsed);
                         SendJson(DataSender::Shared::Messages::Ack("unsubscribe", "subscriptions updated", RemoveSubscriptions(sourceIds), Time::Now));
                         return;
@@ -682,6 +686,8 @@ namespace DataSender {
                 }
 
                 void HandleSourcesSetEnabled(Json::Value@ commandData, const string &in command, bool enabled) {
+                    if (!EnsureArrayField(commandData, "sources", "invalid_sources", "Command requires sources to be an array")) return;
+
                     array<string> sourceIds = ReadSourceIds(commandData);
                     if (sourceIds.Length == 0) {
                         SendJson(DataSender::Shared::Messages::Error("missing_source", "Command requires source ids", Time::Now));
@@ -770,6 +776,7 @@ namespace DataSender {
                         SendJson(DataSender::Shared::Messages::Error("missing_fields", "Command requires a fields array", Time::Now));
                         return;
                     }
+                    if (!EnsureArrayValue(fieldsValue, "invalid_fields", "Command requires fields to be an array")) return;
 
                     array<string> paths = ReadFieldPaths(commandData);
                     Json::Value result = SetFieldFilter(sourceId, paths);
@@ -798,6 +805,26 @@ namespace DataSender {
                             DataSender::Server::Tcp::SendLatestMessageForSource(this, sourceId);
                         }
                     }
+                }
+
+                bool EnsureArrayField(
+                    Json::Value@ command,
+                    const string &in fieldName,
+                    const string &in errorCode,
+                    const string &in message
+                ) {
+                    if (command is null) return false;
+
+                    Json::Value@ value = command.Get(fieldName);
+                    if (value is null) return true;
+                    return EnsureArrayValue(value, errorCode, message);
+                }
+
+                bool EnsureArrayValue(Json::Value@ value, const string &in errorCode, const string &in message) {
+                    if (IsJsonArray(value)) return true;
+
+                    SendJson(DataSender::Shared::Messages::Error(errorCode, message, Time::Now));
+                    return false;
                 }
 
                 void SendServiceControlAck(const string &in command, const string &in message) {
@@ -850,6 +877,7 @@ namespace DataSender {
 
                 Json::Value@ sources = command.Get("sources");
                 if (sources is null) return sourceIds;
+                if (!IsJsonArray(sources)) return sourceIds;
 
                 for (uint i = 0; i < sources.Length; i++) {
                     if (sourceIds.Length >= MaxSourceIdsPerCommand()) break;
@@ -866,6 +894,7 @@ namespace DataSender {
 
                 Json::Value@ fields = command.Get("fields");
                 if (fields is null) return paths;
+                if (!IsJsonArray(fields)) return paths;
 
                 for (uint i = 0; i < fields.Length; i++) {
                     if (paths.Length >= MaxFieldPathsPerSource()) break;
@@ -884,6 +913,10 @@ namespace DataSender {
                     sourceId = string(command.Get("id", Json::Value(""))).Trim();
                 }
                 return sourceId;
+            }
+
+            bool IsJsonArray(Json::Value@ value) {
+                return value !is null && value.GetType() == Json::Type::Array;
             }
         }
     }

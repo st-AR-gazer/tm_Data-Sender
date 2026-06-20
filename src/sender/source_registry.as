@@ -172,6 +172,10 @@ namespace DataSender {
             }
 
             bool SetEnabled(const string &in id, bool enabled) {
+                SourceState@ source = GetById(id);
+                if (source is null) return false;
+
+                bool wasEnabled = source.enabled;
                 if (id == "race_data") {
                     S_EnableRaceData = enabled;
                 } else if (id == "player_cp_info") {
@@ -184,6 +188,11 @@ namespace DataSender {
                     return false;
                 }
                 ApplySettings();
+                if (!enabled) {
+                    ClearLatest(source);
+                } else if (!wasEnabled) {
+                    source.nextSampleAt = Time::Now;
+                }
                 return true;
             }
 
@@ -225,13 +234,13 @@ namespace DataSender {
 
             Json::Value LatestData(const string &in id) {
                 SourceState@ source = GetById(id);
-                if (source is null) return Json::Object();
+                if (source is null || !source.enabled || !source.hasData) return Json::Object();
                 return source.latestData;
             }
 
             Json::Value LatestMessage(const string &in id) {
                 SourceState@ source = GetById(id);
-                if (source is null) return Json::Object();
+                if (source is null || !source.enabled || !source.hasData) return Json::Object();
                 return source.latestMessage;
             }
 
@@ -244,7 +253,7 @@ namespace DataSender {
                 Json::Value messages = Json::Array();
                 for (uint i = 0; i < g_sources.Length; i++) {
                     SourceState@ source = g_sources[i];
-                    if (!source.hasData) continue;
+                    if (!source.enabled || !source.hasData) continue;
                     messages.Add(source.latestMessage);
                 }
                 return messages;
@@ -304,6 +313,15 @@ namespace DataSender {
                     g_cameraSource.enabled = S_EnableCamera;
                     g_cameraSource.intervalMs = ClampInterval(S_CameraIntervalMs);
                 }
+            }
+
+            void ClearLatest(SourceState@ source) {
+                if (source is null) return;
+
+                source.hasData = false;
+                source.latestData = Json::Object();
+                source.latestMessage = Json::Object();
+                source.lastError = "";
             }
 
             void Poll(SourceState@ source, float dt, uint64 now) {
