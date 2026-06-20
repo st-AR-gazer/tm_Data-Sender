@@ -66,7 +66,6 @@ namespace DataSender {
                 int cruiseSpeed;
                 int vehicleType;
                 string vehicleTypeName;
-
                 float steerAngFL, steerAngFR, steerAngRL, steerAngRR;
                 float wheelRotFL, wheelRotFR, wheelRotRL, wheelRotRR;
                 float wheelRotSpeedFL, wheelRotSpeedFR, wheelRotSpeedRL, wheelRotSpeedRR;
@@ -96,11 +95,11 @@ namespace DataSender {
                     o["spd"] = spd;
                     o["sspd"] = sspd;
                     o["frontSpeed"] = frontSpeed;
-                    o["pos"] = Vec3Json(pos);
-                    o["worldVel"] = Vec3Json(worldVel);
-                    o["left"] = Vec3Json(left);
-                    o["up"] = Vec3Json(up);
-                    o["dir"] = Vec3Json(dir);
+                    o["pos"] = DataSender::Sources::Helpers::Vec3Json(pos);
+                    o["worldVel"] = DataSender::Sources::Helpers::Vec3Json(worldVel);
+                    o["left"] = DataSender::Sources::Helpers::Vec3Json(left);
+                    o["up"] = DataSender::Sources::Helpers::Vec3Json(up);
+                    o["dir"] = DataSender::Sources::Helpers::Vec3Json(dir);
                     o["steer"] = steer;
                     o["throttle"] = throttle;
                     o["brake"] = brake;
@@ -109,7 +108,7 @@ namespace DataSender {
                     o["accel"] = accel;
                     o["jerk"] = jerk;
                     o["rpm"] = rpm;
-                    o["reactorAC"] = Vec3Json(reactorAC);
+                    o["reactorAC"] = DataSender::Sources::Helpers::Vec3Json(reactorAC);
                     o["groundDist"] = groundDist;
                     o["groundContact"] = groundContact;
                     o["reactorGnd"] = reactorGround;
@@ -120,60 +119,50 @@ namespace DataSender {
                     o["cruiseSpd"] = cruiseSpeed;
                     o["vehType"] = vehicleType;
                     o["vehicleTypeName"] = vehicleTypeName;
-
-                    o["FL"] = WheelJson(
-                        steerAngFL, wheelRotFL, wheelRotSpeedFL, damperFL, slipFL,
-                        matFL, dirtFL, fallFL, fallNameFL
+                    o["FL"] = WheelJson(steerAngFL, wheelRotFL, wheelRotSpeedFL, damperFL, slipFL, matFL, dirtFL, fallFL, fallNameFL
 #if TMNEXT
-                        , breakNormedFL, icingFL, tireWearFL
+                    , breakNormedFL, icingFL, tireWearFL
 #endif
 #if MP4 || TURBO || FOREVER
-                        , contactFL
+                    , contactFL
 #endif
 #if MP4
-                        , wetFL
+                    , wetFL
 #endif
                     );
-                    o["FR"] = WheelJson(
-                        steerAngFR, wheelRotFR, wheelRotSpeedFR, damperFR, slipFR,
-                        matFR, dirtFR, fallFR, fallNameFR
+                    o["FR"] = WheelJson(steerAngFR, wheelRotFR, wheelRotSpeedFR, damperFR, slipFR, matFR, dirtFR, fallFR, fallNameFR
 #if TMNEXT
-                        , breakNormedFR, icingFR, tireWearFR
+                    , breakNormedFR, icingFR, tireWearFR
 #endif
 #if MP4 || TURBO || FOREVER
-                        , contactFR
+                    , contactFR
 #endif
 #if MP4
-                        , wetFR
+                    , wetFR
 #endif
                     );
-                    o["RL"] = WheelJson(
-                        steerAngRL, wheelRotRL, wheelRotSpeedRL, damperRL, slipRL,
-                        matRL, dirtRL, fallRL, fallNameRL
+                    o["RL"] = WheelJson(steerAngRL, wheelRotRL, wheelRotSpeedRL, damperRL, slipRL, matRL, dirtRL, fallRL, fallNameRL
 #if TMNEXT
-                        , breakNormedRL, icingRL, tireWearRL
+                    , breakNormedRL, icingRL, tireWearRL
 #endif
 #if MP4 || TURBO || FOREVER
-                        , contactRL
+                    , contactRL
 #endif
 #if MP4
-                        , wetRL
+                    , wetRL
 #endif
                     );
-                    o["RR"] = WheelJson(
-                        steerAngRR, wheelRotRR, wheelRotSpeedRR, damperRR, slipRR,
-                        matRR, dirtRR, fallRR, fallNameRR
+                    o["RR"] = WheelJson(steerAngRR, wheelRotRR, wheelRotSpeedRR, damperRR, slipRR, matRR, dirtRR, fallRR, fallNameRR
 #if TMNEXT
-                        , breakNormedRR, icingRR, tireWearRR
+                    , breakNormedRR, icingRR, tireWearRR
 #endif
 #if MP4 || TURBO || FOREVER
-                        , contactRR
+                    , contactRR
 #endif
 #if MP4
-                        , wetRR
+                    , wetRR
 #endif
                     );
-
                     o["vehicleState"] = VehicleStateJson();
                     return o;
                 }
@@ -182,19 +171,17 @@ namespace DataSender {
                     Json::Value root = Json::Object();
                     root["sampledAt"] = DataSender::Toolkit::JsonTime(t);
                     root["finished"] = finished;
-
                     Json::Value pose = Json::Object();
-                    pose["position"] = Vec3Json(pos);
-                    pose["left"] = Vec3Json(left);
-                    pose["up"] = Vec3Json(up);
-                    pose["dir"] = Vec3Json(dir);
+                    pose["position"] = DataSender::Sources::Helpers::Vec3Json(pos);
+                    pose["left"] = DataSender::Sources::Helpers::Vec3Json(left);
+                    pose["up"] = DataSender::Sources::Helpers::Vec3Json(up);
+                    pose["dir"] = DataSender::Sources::Helpers::Vec3Json(dir);
 #if TMNEXT
-                    pose["worldCarUp"] = Vec3Json(worldCarUp);
+                    pose["worldCarUp"] = DataSender::Sources::Helpers::Vec3Json(worldCarUp);
 #endif
                     root["pose"] = pose;
-
                     Json::Value velocity = Json::Object();
-                    velocity["world"] = Vec3Json(worldVel);
+                    velocity["world"] = DataSender::Sources::Helpers::Vec3Json(worldVel);
                     velocity["speed"] = spd;
                     velocity["speedKph"] = spd * 3.6f;
                     velocity["frontSpeed"] = frontSpeed;
@@ -204,7 +191,6 @@ namespace DataSender {
                     velocity["acceleration"] = accel;
                     velocity["jerk"] = jerk;
                     root["velocity"] = velocity;
-
                     Json::Value inputs = Json::Object();
                     inputs["steer"] = steer;
                     inputs["gasPedal"] = throttle;
@@ -214,7 +200,6 @@ namespace DataSender {
                     inputs["vertical"] = inputVertical;
 #endif
                     root["inputs"] = inputs;
-
                     Json::Value contact = Json::Object();
                     contact["isGroundContact"] = groundContact;
                     contact["groundDist"] = groundDist;
@@ -223,9 +208,8 @@ namespace DataSender {
                     contact["isWheelsBurning"] = wheelsBurning;
 #endif
                     root["contact"] = contact;
-
                     Json::Value reactor = Json::Object();
-                    reactor["airControl"] = Vec3Json(reactorAC);
+                    reactor["airControl"] = DataSender::Sources::Helpers::Vec3Json(reactorAC);
                     reactor["isGroundMode"] = reactorGround;
                     reactor["finalTimer"] = reactorTimer;
 #if TMNEXT
@@ -236,7 +220,6 @@ namespace DataSender {
                     reactor["inputsX"] = reactorInputsX;
 #endif
                     root["reactor"] = reactor;
-
                     Json::Value engine = Json::Object();
                     engine["rpm"] = rpm;
                     engine["curGear"] = gear;
@@ -270,12 +253,11 @@ namespace DataSender {
                     dynamics["wingsOpenNormed"] = wingsOpenNormed;
                     dynamics["discontinuityCount"] = DataSender::Toolkit::JsonCounter(uint64(discontinuityCount));
                     root["dynamics"] = dynamics;
-
                     Json::Value water = Json::Object();
                     water["wetnessValue01"] = wetnessValue01;
                     water["immersionCoef"] = waterImmersionCoef;
                     water["overDistNormed"] = waterOverDistNormed;
-                    water["overSurfacePos"] = Vec3Json(waterOverSurfacePos);
+                    water["overSurfacePos"] = DataSender::Sources::Helpers::Vec3Json(waterOverSurfacePos);
                     root["water"] = water;
 #endif
 
@@ -289,89 +271,70 @@ namespace DataSender {
                 }
 
                 Json::Value oFL() const {
-                    return WheelJson(
-                        steerAngFL, wheelRotFL, wheelRotSpeedFL, damperFL, slipFL,
-                        matFL, dirtFL, fallFL, fallNameFL
+                    return WheelJson(steerAngFL, wheelRotFL, wheelRotSpeedFL, damperFL, slipFL, matFL, dirtFL, fallFL, fallNameFL
 #if TMNEXT
-                        , breakNormedFL, icingFL, tireWearFL
+                    , breakNormedFL, icingFL, tireWearFL
 #endif
 #if MP4 || TURBO || FOREVER
-                        , contactFL
+                    , contactFL
 #endif
 #if MP4
-                        , wetFL
+                    , wetFL
 #endif
                     );
                 }
 
                 Json::Value oFR() const {
-                    return WheelJson(
-                        steerAngFR, wheelRotFR, wheelRotSpeedFR, damperFR, slipFR,
-                        matFR, dirtFR, fallFR, fallNameFR
+                    return WheelJson(steerAngFR, wheelRotFR, wheelRotSpeedFR, damperFR, slipFR, matFR, dirtFR, fallFR, fallNameFR
 #if TMNEXT
-                        , breakNormedFR, icingFR, tireWearFR
+                    , breakNormedFR, icingFR, tireWearFR
 #endif
 #if MP4 || TURBO || FOREVER
-                        , contactFR
+                    , contactFR
 #endif
 #if MP4
-                        , wetFR
+                    , wetFR
 #endif
                     );
                 }
 
                 Json::Value oRL() const {
-                    return WheelJson(
-                        steerAngRL, wheelRotRL, wheelRotSpeedRL, damperRL, slipRL,
-                        matRL, dirtRL, fallRL, fallNameRL
+                    return WheelJson(steerAngRL, wheelRotRL, wheelRotSpeedRL, damperRL, slipRL, matRL, dirtRL, fallRL, fallNameRL
 #if TMNEXT
-                        , breakNormedRL, icingRL, tireWearRL
+                    , breakNormedRL, icingRL, tireWearRL
 #endif
 #if MP4 || TURBO || FOREVER
-                        , contactRL
+                    , contactRL
 #endif
 #if MP4
-                        , wetRL
+                    , wetRL
 #endif
                     );
                 }
 
                 Json::Value oRR() const {
-                    return WheelJson(
-                        steerAngRR, wheelRotRR, wheelRotSpeedRR, damperRR, slipRR,
-                        matRR, dirtRR, fallRR, fallNameRR
+                    return WheelJson(steerAngRR, wheelRotRR, wheelRotSpeedRR, damperRR, slipRR, matRR, dirtRR, fallRR, fallNameRR
 #if TMNEXT
-                        , breakNormedRR, icingRR, tireWearRR
+                    , breakNormedRR, icingRR, tireWearRR
 #endif
 #if MP4 || TURBO || FOREVER
-                        , contactRR
+                    , contactRR
 #endif
 #if MP4
-                        , wetRR
+                    , wetRR
 #endif
                     );
                 }
 
-                Json::Value WheelJson(
-                    float steerAng,
-                    float wheelRot,
-                    float wheelRotSpeed,
-                    float damper,
-                    float slip,
-                    int mat,
-                    float dirt,
-                    int fall,
-                    const string &in fallName
+                Json::Value WheelJson(float steerAng, float wheelRot, float wheelRotSpeed, float damper, float slip, int mat, float dirt, int fall, const string &in fallName
 #if TMNEXT
-                    , float breakNormed,
-                    float icing,
-                    float tireWear
+                , float breakNormed, float icing, float tireWear
 #endif
 #if MP4 || TURBO || FOREVER
-                    , bool contact
+                , bool contact
 #endif
 #if MP4
-                    , bool wet
+                , bool wet
 #endif
                 ) const {
                     Json::Value root = Json::Object();
@@ -450,7 +413,6 @@ namespace DataSender {
                 s.jerk = (s.accel - g_prevAccel) / dt;
                 g_prevSpeed = speed;
                 g_prevAccel = s.accel;
-
                 s.steer = vis.InputSteer;
                 s.throttle = vis.InputGasPedal;
                 s.brake = vis.InputBrakePedal;
@@ -524,7 +486,6 @@ namespace DataSender {
                 }
 #endif
                 s.finished = finished;
-
                 s.steerAngFL = vis.FLSteerAngle;
                 s.steerAngFR = vis.FRSteerAngle;
                 s.steerAngRL = vis.RLSteerAngle;
@@ -617,14 +578,6 @@ namespace DataSender {
                     return Unavailable(g_unavailableReason);
                 }
                 return g_latest.ToJson();
-            }
-
-            Json::Value Vec3Json(const vec3 &in value) {
-                Json::Value arr = Json::Array();
-                arr.Add(value.x);
-                arr.Add(value.y);
-                arr.Add(value.z);
-                return arr;
             }
         }
     }

@@ -74,10 +74,34 @@ namespace DataSender {
 
                 g_initialized = true;
                 g_sources.RemoveRange(0, g_sources.Length);
-                @g_raceDataSource = SourceState(SourceKind::RaceData, "race_data", "Race data", S_EnableRaceData, S_RaceDataIntervalMs);
-                @g_playerCpInfoSource = SourceState(SourceKind::PlayerCpInfo, "player_cp_info", "Player CP info", S_EnablePlayerCpInfo, S_PlayerCpInfoIntervalMs);
-                @g_vehicleStateSource = SourceState(SourceKind::VehicleState, "vehicle_state", "Vehicle state", S_EnableVehicleState, S_VehicleStateIntervalMs);
-                @g_cameraSource = SourceState(SourceKind::Camera, "camera", "Camera", S_EnableCamera, S_CameraIntervalMs);
+                @g_raceDataSource = SourceState(
+                    SourceKind::RaceData,
+                    "race_data",
+                    "Race data",
+                    S_EnableRaceData,
+                    S_RaceDataIntervalMs
+                );
+                @g_playerCpInfoSource = SourceState(
+                    SourceKind::PlayerCpInfo,
+                    "player_cp_info",
+                    "Player CP info",
+                    S_EnablePlayerCpInfo,
+                    S_PlayerCpInfoIntervalMs
+                );
+                @g_vehicleStateSource = SourceState(
+                    SourceKind::VehicleState,
+                    "vehicle_state",
+                    "Vehicle state",
+                    S_EnableVehicleState,
+                    S_VehicleStateIntervalMs
+                );
+                @g_cameraSource = SourceState(
+                    SourceKind::Camera,
+                    "camera",
+                    "Camera",
+                    S_EnableCamera,
+                    S_CameraIntervalMs
+                );
                 g_sources.InsertLast(g_raceDataSource);
                 g_sources.InsertLast(g_playerCpInfoSource);
                 g_sources.InsertLast(g_vehicleStateSource);

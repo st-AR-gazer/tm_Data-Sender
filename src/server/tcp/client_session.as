@@ -392,7 +392,11 @@ namespace DataSender {
                     return parts;
                 }
 
-                bool CopyFieldPath(const Json::Value &in sourceRoot, Json::Value &inout targetRoot, const string &in path) {
+                bool CopyFieldPath(
+                    const Json::Value &in sourceRoot,
+                    Json::Value &inout targetRoot,
+                    const string &in path
+                ) {
                     array<string> parts = SplitFieldPath(path);
                     if (parts.Length == 0) return false;
                     return CopyFieldPathInto(sourceRoot, targetRoot, parts, 0);
@@ -422,7 +426,6 @@ namespace DataSender {
                     if (existingChild !is null) {
                         child = existingChild;
                     }
-
                     if (!CopyFieldPathInto(value, child, parts, index + 1)) return false;
                     target[key] = child;
                     return true;
@@ -785,7 +788,6 @@ namespace DataSender {
                     } else {
                         ClearFieldFilter(sourceId);
                     }
-
                     Json::Value data = Json::Object();
                     data["source"] = sourceId.Length == 0 ? "all" : NormalizedSubscriptionSourceId(sourceId);
                     data["fields"] = FieldFiltersJson();

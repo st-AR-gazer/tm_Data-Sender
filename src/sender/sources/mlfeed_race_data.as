@@ -14,42 +14,37 @@ namespace DataSender {
 
                 root["available"] = true;
                 root["map"] = rd.Map;
-                root["gameTime"] = UIntJson(MLFeed::GameTime);
+                root["gameTime"] = DataSender::Sources::Helpers::UIntJson(MLFeed::GameTime);
                 root["localPlayersName"] = MLFeed::LocalPlayersName;
-                root["localPlayersLoginIdValue"] = UIntJson(MLFeed::LocalPlayersLoginIdValue);
-                root["cpCount"] = UIntJson(rd.CPCount);
-                root["cpsToFinish"] = UIntJson(rd.CPsToFinish);
-                root["lapCount"] = UIntJson(rd.LapCount_Accurate);
-                root["lapCountRaw"] = UIntJson(rd.LapCount);
+                root["localPlayersLoginIdValue"] = DataSender::Sources::Helpers::UIntJson(MLFeed::LocalPlayersLoginIdValue);
+                root["cpCount"] = DataSender::Sources::Helpers::UIntJson(rd.CPCount);
+                root["cpsToFinish"] = DataSender::Sources::Helpers::UIntJson(rd.CPsToFinish);
+                root["lapCount"] = DataSender::Sources::Helpers::UIntJson(rd.LapCount_Accurate);
+                root["lapCountRaw"] = DataSender::Sources::Helpers::UIntJson(rd.LapCount);
                 root["lapsNb"] = rd.LapsNb;
-                root["spawnCount"] = UIntJson(rd.SpawnCounter);
-                root["updateNonce"] = UIntJson(rd.UpdateNonce);
+                root["spawnCount"] = DataSender::Sources::Helpers::UIntJson(rd.SpawnCounter);
+                root["updateNonce"] = DataSender::Sources::Helpers::UIntJson(rd.UpdateNonce);
                 root["lastRecordTime"] = rd.LastRecordTime;
                 root["rules"] = RulesJson(rd);
                 root["warmup"] = WarmupJson(rd);
                 root["playersLeft"] = PlayersLeftJson(rd);
                 root["cotdQualification"] = CotdQualificationJson(rd);
-
                 if (rd.LocalPlayer !is null) {
                     root["localPlayer"] = PlayerRefJson(rd.LocalPlayer);
                 }
-
                 Json::Value racePlayers = PlayerRefArrayJson(rd.SortedPlayers_Race);
                 Json::Value raceRespawnPlayers = PlayerRefArrayJson(rd.SortedPlayers_Race_Respawns);
                 Json::Value timeAttackPlayers = PlayerRefArrayJson(rd.SortedPlayers_TimeAttack);
-
                 root["players"] = racePlayers;
-
                 Json::Value sortedPlayers = Json::Object();
                 sortedPlayers["race"] = racePlayers;
                 sortedPlayers["raceRespawns"] = raceRespawnPlayers;
                 sortedPlayers["timeAttack"] = timeAttackPlayers;
                 root["sortedPlayers"] = sortedPlayers;
-
                 Json::Value playerCounts = Json::Object();
-                playerCounts["race"] = UIntJson(rd.SortedPlayers_Race.Length);
-                playerCounts["raceRespawns"] = UIntJson(rd.SortedPlayers_Race_Respawns.Length);
-                playerCounts["timeAttack"] = UIntJson(rd.SortedPlayers_TimeAttack.Length);
+                playerCounts["race"] = DataSender::Sources::Helpers::UIntJson(rd.SortedPlayers_Race.Length);
+                playerCounts["raceRespawns"] = DataSender::Sources::Helpers::UIntJson(rd.SortedPlayers_Race_Respawns.Length);
+                playerCounts["timeAttack"] = DataSender::Sources::Helpers::UIntJson(rd.SortedPlayers_TimeAttack.Length);
                 root["playerCounts"] = playerCounts;
 #else
                 root["available"] = false;
@@ -85,9 +80,9 @@ namespace DataSender {
                 Json::Value root = Json::Object();
                 if (rd is null) return root;
 
-                root["batchNumber"] = UIntJson(rd.PlayersLeft_BatchNumber);
-                root["names"] = StringArrayJson(rd.PlayersLeftThisBatch);
-                root["loginIdValues"] = UIntArrayJson(rd.PlayersLeftThisBatch_LoginIdValues);
+                root["batchNumber"] = DataSender::Sources::Helpers::UIntJson(rd.PlayersLeft_BatchNumber);
+                root["names"] = DataSender::Sources::Helpers::StringArrayJson(rd.PlayersLeftThisBatch);
+                root["loginIdValues"] = DataSender::Sources::Helpers::UIntArrayJson(rd.PlayersLeftThisBatch_LoginIdValues);
                 return root;
             }
 
@@ -106,7 +101,7 @@ namespace DataSender {
                 return root;
             }
 
-            Json::Value PlayerRefArrayJson(const array<MLFeed::PlayerCpInfo_V2@>@ players) {
+            Json::Value PlayerRefArrayJson(const array<MLFeed::PlayerCpInfo_V2@> @players) {
                 Json::Value arr = Json::Array();
                 if (players is null) return arr;
 
@@ -114,7 +109,7 @@ namespace DataSender {
                     auto player = cast<MLFeed::PlayerCpInfo_V4>(players[i]);
                     if (player is null) continue;
                     Json::Value item = PlayerRefJson(player);
-                    item["order"] = UIntJson(i + 1);
+                    item["order"] = DataSender::Sources::Helpers::UIntJson(i + 1);
                     arr.Add(item);
                 }
                 return arr;
@@ -124,47 +119,12 @@ namespace DataSender {
                 Json::Value root = Json::Object();
                 if (player is null) return root;
 
-                root["name"] = player.Name;
-                root["login"] = player.Login;
-                root["wsid"] = player.WebServicesUserId;
-                root["loginMwId"] = MwIdJson(player.LoginMwId);
-                root["nameMwId"] = MwIdJson(player.NameMwId);
+                root = DataSender::Sources::Helpers::PlayerIdentityJson(player);
                 root["cpCount"] = player.CpCount;
-                root["raceRank"] = UIntJson(player.RaceRank);
-                root["raceRespawnRank"] = UIntJson(player.RaceRespawnRank);
-                root["taRank"] = UIntJson(player.TaRank);
+                root["raceRank"] = DataSender::Sources::Helpers::UIntJson(player.RaceRank);
+                root["raceRespawnRank"] = DataSender::Sources::Helpers::UIntJson(player.RaceRespawnRank);
+                root["taRank"] = DataSender::Sources::Helpers::UIntJson(player.TaRank);
                 return root;
-            }
-
-            Json::Value MwIdJson(const MwId &in id) {
-                Json::Value root = Json::Object();
-                root["value"] = UIntJson(id.Value);
-                root["name"] = id.GetName();
-                return root;
-            }
-
-            Json::Value StringArrayJson(const array<string>@ values) {
-                Json::Value arr = Json::Array();
-                if (values is null) return arr;
-
-                for (uint i = 0; i < values.Length; i++) {
-                    arr.Add(values[i]);
-                }
-                return arr;
-            }
-
-            Json::Value UIntArrayJson(const array<uint>@ values) {
-                Json::Value arr = Json::Array();
-                if (values is null) return arr;
-
-                for (uint i = 0; i < values.Length; i++) {
-                    arr.Add(UIntJson(values[i]));
-                }
-                return arr;
-            }
-
-            int64 UIntJson(uint value) {
-                return DataSender::Toolkit::JsonCounter(uint64(value));
             }
 #endif
         }

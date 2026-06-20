@@ -27,8 +27,8 @@ namespace DataSender {
                 if (vis !is null) {
                     vec3 screenPos = Camera::ToScreen(vis.Position);
                     Json::Value vehicle = Json::Object();
-                    vehicle["worldPosition"] = Vec3Json(vis.Position);
-                    vehicle["screenPosition"] = Vec3Json(screenPos);
+                    vehicle["worldPosition"] = DataSender::Sources::Helpers::Vec3Json(vis.Position);
+                    vehicle["screenPosition"] = DataSender::Sources::Helpers::Vec3Json(screenPos);
                     vehicle["behindCamera"] = Camera::IsBehind(vis.Position);
                     root["viewingVehicle"] = vehicle;
                 }
@@ -45,9 +45,9 @@ namespace DataSender {
                 if (camera is null) return root;
 
                 root["isActive"] = camera.IsActive;
-                root["position"] = Vec3Json(cameraPosition);
-                root["location"] = Iso4Json(camera.Location);
-                root["nextLocation"] = Iso4Json(camera.NextLocation);
+                root["position"] = DataSender::Sources::Helpers::Vec3Json(cameraPosition);
+                root["location"] = DataSender::Sources::Helpers::Iso4Json(camera.Location);
+                root["nextLocation"] = DataSender::Sources::Helpers::Iso4Json(camera.NextLocation);
                 root["m_IsPickEnable"] = camera.m_IsPickEnable;
                 root["m_UseViewDependantRendering"] = camera.m_UseViewDependantRendering;
                 root["m_ViewportRatio"] = tostring(camera.m_ViewportRatio);
@@ -58,14 +58,14 @@ namespace DataSender {
                 root["isOverlay3d"] = camera.IsOverlay3d;
 #endif
                 root["clearColorEnable"] = camera.ClearColorEnable;
-                root["clearColor"] = Vec3Json(camera.ClearColor);
+                root["clearColor"] = DataSender::Sources::Helpers::Vec3Json(camera.ClearColor);
                 root["m_UseZBuffer"] = camera.m_UseZBuffer;
                 root["scissorRect"] = camera.ScissorRect;
                 root["fovRect"] = camera.FovRect;
                 root["clearZBuffer"] = camera.ClearZBuffer;
-                root["drawRect"] = RectJson(camera.DrawRectMin, camera.DrawRectMax);
-                root["scissor"] = RectJson(camera.ScissorMin, camera.ScissorMax);
-                root["fovRectBounds"] = RectJson(camera.FovRectMin, camera.FovRectMax);
+                root["drawRect"] = DataSender::Sources::Helpers::RectJson(camera.DrawRectMin, camera.DrawRectMax);
+                root["scissor"] = DataSender::Sources::Helpers::RectJson(camera.ScissorMin, camera.ScissorMax);
+                root["fovRectBounds"] = DataSender::Sources::Helpers::RectJson(camera.FovRectMin, camera.FovRectMax);
                 root["nearZ"] = camera.NearZ;
                 root["farZ"] = camera.FarZ;
                 root["fov"] = camera.Fov;
@@ -92,21 +92,19 @@ namespace DataSender {
                 mat4 cameraMatrix = mat4(camera.Location);
                 mat4 viewMatrix = mat4::Inverse(cameraMatrix);
                 mat4 cameraPluginProjection = Camera::GetProjectionMatrix();
-
-                root["cameraMatrix"] = Mat4Json(cameraMatrix);
-                root["viewMatrix"] = Mat4Json(viewMatrix);
-                root["projectionMatrix"] = Mat4Json(projectionOnly);
-                root["viewProjectionMatrix"] = Mat4Json(cameraPluginProjection);
-                root["cameraPluginProjectionMatrix"] = Mat4Json(cameraPluginProjection);
-                root["nextCameraMatrix"] = Mat4Json(mat4(camera.NextLocation));
-
+                root["cameraMatrix"] = DataSender::Sources::Helpers::Mat4Json(cameraMatrix);
+                root["viewMatrix"] = DataSender::Sources::Helpers::Mat4Json(viewMatrix);
+                root["projectionMatrix"] = DataSender::Sources::Helpers::Mat4Json(projectionOnly);
+                root["viewProjectionMatrix"] = DataSender::Sources::Helpers::Mat4Json(cameraPluginProjection);
+                root["cameraPluginProjectionMatrix"] = DataSender::Sources::Helpers::Mat4Json(cameraPluginProjection);
+                root["nextCameraMatrix"] = DataSender::Sources::Helpers::Mat4Json(mat4(camera.NextLocation));
                 vec2 displaySize = Display::GetSize();
                 vec2 displayPos = DisplayPos(camera, displaySize);
                 vec2 projectedSize = DisplayProjectedSize(camera, displaySize);
-                root["displaySize"] = Vec2Json(displaySize);
-                root["displayPos"] = Vec2Json(displayPos);
-                root["displayProjectedSize"] = Vec2Json(projectedSize);
-                root["drawRect"] = RectJson(camera.DrawRectMin, camera.DrawRectMax);
+                root["displaySize"] = DataSender::Sources::Helpers::Vec2Json(displaySize);
+                root["displayPos"] = DataSender::Sources::Helpers::Vec2Json(displayPos);
+                root["displayProjectedSize"] = DataSender::Sources::Helpers::Vec2Json(projectedSize);
+                root["drawRect"] = DataSender::Sources::Helpers::RectJson(camera.DrawRectMin, camera.DrawRectMax);
                 root["toScreenBehindWhenWGreaterThanZero"] = true;
                 return root;
             }
@@ -120,53 +118,6 @@ namespace DataSender {
                 vec2 topLeft = 1.0f - (camera.DrawRectMax + 1.0f) / 2.0f;
                 vec2 bottomRight = 1.0f - (camera.DrawRectMin + 1.0f) / 2.0f;
                 return displaySize * (bottomRight - topLeft);
-            }
-
-            Json::Value RectJson(const vec2 &in min, const vec2 &in max) {
-                Json::Value root = Json::Object();
-                root["min"] = Vec2Json(min);
-                root["max"] = Vec2Json(max);
-                return root;
-            }
-
-            Json::Value Iso4Json(const iso4 &in value) {
-                Json::Value root = Json::Object();
-                root["translation"] = Vec3Json(vec3(value.tx, value.ty, value.tz));
-                root["matrix"] = Mat4Json(mat4(value));
-                return root;
-            }
-
-            Json::Value Mat4Json(const mat4 &in value) {
-                Json::Value columns = Json::Array();
-                columns.Add(Vec4Json(value * vec4(1.0f, 0.0f, 0.0f, 0.0f)));
-                columns.Add(Vec4Json(value * vec4(0.0f, 1.0f, 0.0f, 0.0f)));
-                columns.Add(Vec4Json(value * vec4(0.0f, 0.0f, 1.0f, 0.0f)));
-                columns.Add(Vec4Json(value * vec4(0.0f, 0.0f, 0.0f, 1.0f)));
-                return columns;
-            }
-
-            Json::Value Vec2Json(const vec2 &in value) {
-                Json::Value arr = Json::Array();
-                arr.Add(value.x);
-                arr.Add(value.y);
-                return arr;
-            }
-
-            Json::Value Vec3Json(const vec3 &in value) {
-                Json::Value arr = Json::Array();
-                arr.Add(value.x);
-                arr.Add(value.y);
-                arr.Add(value.z);
-                return arr;
-            }
-
-            Json::Value Vec4Json(const vec4 &in value) {
-                Json::Value arr = Json::Array();
-                arr.Add(value.x);
-                arr.Add(value.y);
-                arr.Add(value.z);
-                arr.Add(value.w);
-                return arr;
             }
         }
     }
